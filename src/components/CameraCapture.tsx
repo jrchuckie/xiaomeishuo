@@ -108,8 +108,9 @@ export default function CameraCapture({ kind, label, onCapture }: Props) {
           </div>
           <div className="camera-controls">
             <label className="camera-library">
-              <input type="file" accept="image/*" onChange={(event) => {
-                const file = event.target.files?.[0];
+              <input type="file" accept="image/*,.heic,.heif,.avif" onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = "";
                 if (file) {
                   onCapture(file);
                   close();

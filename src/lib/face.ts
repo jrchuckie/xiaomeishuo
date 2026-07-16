@@ -124,11 +124,19 @@ export async function inspectFacePhoto(blob: Blob, expected: CaptureKind): Promi
 }
 
 export function createFaceProfile(captures: FaceCapture[], frontLandmarks?: { x: number; y: number }[]): FaceProfile {
-  const ready = captures.length === 3 && captures.every((capture) => capture.quality?.usable);
-  if (!frontLandmarks) {
+  const hasFront = captures.some((capture) => capture.kind === "front");
+  const hasSide = captures.some((capture) => capture.kind === "left" || capture.kind === "right");
+  const ready = hasFront && hasSide;
+  const warningCount = captures.filter((capture) => capture.quality && !capture.quality.usable).length;
+  if (!frontLandmarks || frontLandmarks.length <= 454) {
     return {
       captureReady: ready,
-      summary: ["需要一张合格正脸才能计算基础比例", "当前照片仍可用于流程体验，但不用于正式建议"],
+      summary: [
+        ready ? "已获取正脸与侧脸，可以进入下一步" : "至少需要一张正脸和任一侧脸",
+        warningCount > 0
+          ? `${warningCount} 张照片有质量提醒；本次可继续，正式建议前应复核或重拍`
+          : "面部比例仍在后台计算，不影响继续设置预算与边界",
+      ],
     };
   }
 
@@ -144,6 +152,7 @@ export function createFaceProfile(captures: FaceCapture[], frontLandmarks?: { x:
     faceRatio > 1.48 ? "纵向比例偏长，适合保留横向留白" : faceRatio < 1.25 ? "纵向比例偏短，适合用发型与眉形增加舒展感" : "长宽比例较均衡，不需要追逐单一模板",
     jawRatio > 0.78 ? "下颌存在感较强，可优先优化面颈边界" : "下颌过渡相对柔和，优先保护原生轮廓",
     balance > 0.9 ? "正面左右平衡度良好" : "存在自然不对称，建议在标准拍摄后再判断",
+    ...(warningCount > 0 ? [`${warningCount} 张照片有质量提醒，正式建议前应复核或重拍`] : []),
   ];
 
   return { faceRatio, jawRatio, balance, landmarks: frontLandmarks, summary, captureReady: ready };

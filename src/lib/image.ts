@@ -9,7 +9,7 @@ async function canvasToBlob(canvas: HTMLCanvasElement, quality: number) {
 }
 
 export async function resizeImageBlob(blob: Blob, maxDimension = 1440, quality = 0.86): Promise<Blob> {
-  if (!blob.type.startsWith("image/") || blob.type === "image/svg+xml") return blob;
+  if ((blob.type && !blob.type.startsWith("image/")) || blob.type === "image/svg+xml") return blob;
 
   let bitmap: ImageBitmap | undefined;
   try {

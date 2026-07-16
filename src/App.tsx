@@ -19,7 +19,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CameraCapture from "./components/CameraCapture";
 import FaceSimulation from "./components/FaceSimulation";
 import FeatureDirectionPicker from "./components/FeatureDirectionPicker";
@@ -70,10 +70,10 @@ const PRIORITIES = ["肤质", "眉形", "眼睛", "鼻子", "嘴唇", "轮廓", 
 const PRESERVE_OPTIONS = ["原生肤色", "单眼皮/内双", "鼻部辨识度", "下颌线", "自然不对称", "痣与雀斑"];
 const EXCLUDED_OPTIONS = ["美白", "填充/针剂", "光电项目", "手术", "纹绣"];
 const MEDICAL_FLAG_OPTIONS = ["过敏史", "瘢痕或增生体质", "正在服用影响凝血的药物", "孕期或哺乳期", "皮肤炎症或爆痘", "既往项目有不良反应"];
-const CAPTURES: { kind: CaptureKind; label: string; note: string }[] = [
-  { kind: "front", label: "正脸", note: "平视镜头，头部不倾斜" },
-  { kind: "left", label: "左侧脸", note: "完整侧面，耳朵可见" },
-  { kind: "right", label: "右侧脸", note: "完整侧面，耳朵可见" },
+const CAPTURES: { kind: CaptureKind; label: string; note: string; requirement: string }[] = [
+  { kind: "front", label: "正脸", note: "平视镜头，头部不倾斜", requirement: "必拍" },
+  { kind: "left", label: "左侧脸", note: "完整侧面，耳朵可见", requirement: "左右任选一张" },
+  { kind: "right", label: "右侧脸", note: "完整侧面，耳朵可见", requirement: "左右任选一张" },
 ];
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -156,6 +156,7 @@ function App() {
   const [boardStatus, setBoardStatus] = useState(BOARD_STATUS_DEFAULT);
   const [boardTone, setBoardTone] = useState<"idle" | "ok" | "warn">("idle");
   const [references, setReferences] = useState<SourceImage[]>([]);
+  const referenceInputRef = useRef<HTMLInputElement>(null);
   const [calibration, setCalibration] = useState<string[]>(["natural"]);
   const [profile, setProfile] = useState<AestheticProfile>();
   const [analysisMessage, setAnalysisMessage] = useState("");
@@ -163,8 +164,11 @@ function App() {
   const [analyzing, setAnalyzing] = useState(false);
   const [preparingReferences, setPreparingReferences] = useState(false);
   const [captures, setCaptures] = useState<FaceCapture[]>([]);
-  const [frontLandmarks, setFrontLandmarks] = useState<{ x: number; y: number }[]>();
+  const capturesRef = useRef<FaceCapture[]>([]);
+  const [inspectingCaptures, setInspectingCaptures] = useState<CaptureKind[]>([]);
+  const frontLandmarksRef = useRef<{ x: number; y: number }[] | undefined>(undefined);
   const [faceProfile, setFaceProfile] = useState<FaceProfile>();
+  const [captureMessage, setCaptureMessage] = useState("");
   const [captureAttested, setCaptureAttested] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [selections, setSelections] = useState<FeatureSelections>(DEFAULT_SELECTIONS);
@@ -200,17 +204,21 @@ function App() {
           loadLocal<WorkflowProgress>("progress"),
         ]);
         const restoredPreferences = storedPreferences ? { ...DEFAULT_PREFERENCES, ...storedPreferences } : DEFAULT_PREFERENCES;
-        const restoredPlan = storedPlan && storedProfile && storedFaceProfile?.captureReady ? storedPlan : undefined;
+        const restoredCaptures = storedCaptures?.map((capture) => ({ ...capture, preview: URL.createObjectURL(capture.blob) })) ?? [];
+        const refreshedFaceProfile = storedFaceProfile || restoredCaptures.length
+          ? createFaceProfile(restoredCaptures, storedFaceProfile?.landmarks)
+          : undefined;
+        const restoredPlan = storedPlan && storedProfile && refreshedFaceProfile?.captureReady ? storedPlan : undefined;
         if (storedReferences) {
           setReferences(storedReferences.map((image) => ({ ...image, preview: URL.createObjectURL(image.blob) })));
         }
-        if (storedCaptures) {
-          setCaptures(storedCaptures.map((capture) => ({ ...capture, preview: URL.createObjectURL(capture.blob) })));
-        }
+        setCaptures(restoredCaptures);
+        capturesRef.current = restoredCaptures;
         if (storedProfile) setProfile(storedProfile);
-        if (storedFaceProfile) {
-          setFaceProfile(storedFaceProfile);
-          setFrontLandmarks(storedFaceProfile.landmarks);
+        if (refreshedFaceProfile) {
+          setFaceProfile(refreshedFaceProfile);
+          frontLandmarksRef.current = refreshedFaceProfile.landmarks;
+          void saveLocal("faceProfile", refreshedFaceProfile);
         }
         setPreferences(restoredPreferences);
         if (storedSelections) setSelections(storedSelections);
@@ -219,7 +227,7 @@ function App() {
         if (storedProgress?.captureAttested) setCaptureAttested(true);
         setScreen(resumableScreen(storedProgress?.screen, {
           profile: storedProfile,
-          faceProfile: storedFaceProfile,
+          faceProfile: refreshedFaceProfile,
           preferences: restoredPreferences,
           plan: restoredPlan,
         }));
@@ -269,12 +277,26 @@ function App() {
     plan: Boolean(plan),
   }), [profile, faceProfile, preferences.priorities.length, plan]);
 
+  const faceMinimum = useMemo(() => ({
+    hasFront: captures.some((capture) => capture.kind === "front"),
+    hasSide: captures.some((capture) => capture.kind === "left" || capture.kind === "right"),
+  }), [captures]);
+
   const addReferences = async (files: FileList | null) => {
     if (!files?.length) return;
+    const remainingSlots = Math.max(0, 24 - references.length);
+    if (remainingSlots === 0) {
+      setAnalysisMessage("当前已达到 24 张上限；删除不需要的样本后可以继续添加。");
+      return;
+    }
+    const imageExtension = /\.(?:avif|hei[cf]|jpe?g|png|webp)$/i;
     const selectedFiles = Array.from(files)
-      .filter((file) => file.type.startsWith("image/"))
-      .slice(0, Math.max(0, 24 - references.length));
-    if (!selectedFiles.length) return;
+      .filter((file) => file.type.startsWith("image/") || imageExtension.test(file.name))
+      .slice(0, remainingSlots);
+    if (!selectedFiles.length) {
+      setAnalysisMessage("没有识别到可用图片，请选择 JPG、PNG、HEIC、AVIF 或 WebP 文件。");
+      return;
+    }
 
     setPreparingReferences(true);
     setAnalysisMessage(`正在优化并保存 0 / ${selectedFiles.length} 张图片`);
@@ -376,46 +398,65 @@ function App() {
 
   const setCapture = async (kind: CaptureKind, file?: File) => {
     if (!file) return;
-    const prepared = await optimizeImageFile(file, 1600, 0.9);
-    releasePreview(captures.find((capture) => capture.kind === kind)?.preview);
-    const preview = URL.createObjectURL(prepared);
-    const base: FaceCapture = { kind, name: prepared.name, blob: prepared, preview };
-    const nextBase = [...captures.filter((capture) => capture.kind !== kind), base];
-    setCaptures(nextBase);
+    setCaptureMessage("");
+    setCaptureAttested(false);
+    setInspectingCaptures((current) => current.includes(kind) ? current : [...current, kind]);
     try {
-      const inspected = await inspectFacePhoto(prepared, kind);
-      if (kind === "front" && inspected.landmarks) setFrontLandmarks(inspected.landmarks);
-      const next = nextBase.map((capture) => capture.kind === kind ? { ...capture, quality: inspected.quality } : capture);
-      setCaptures(next);
-      const nextProfile = createFaceProfile(next, kind === "front" ? inspected.landmarks : frontLandmarks);
-      setFaceProfile(nextProfile);
+      const prepared = await optimizeImageFile(file, 1600, 0.9);
+      releasePreview(capturesRef.current.find((capture) => capture.kind === kind)?.preview);
+      const preview = URL.createObjectURL(prepared);
+      const base: FaceCapture = { kind, name: prepared.name, blob: prepared, preview };
+      const nextBase = [...capturesRef.current.filter((capture) => capture.kind !== kind), base];
+      capturesRef.current = nextBase;
+      setCaptures(nextBase);
+      const draftProfile = createFaceProfile(nextBase, frontLandmarksRef.current);
+      setFaceProfile(draftProfile);
       setPlan(undefined);
+      await Promise.all([
+        saveLocal<StoredCapture[]>("faces", nextBase.map(({ preview: _preview, ...capture }) => capture)),
+        saveLocal("faceProfile", draftProfile),
+        removeLocal("plan"),
+      ]);
+
+      let inspected: Awaited<ReturnType<typeof inspectFacePhoto>>;
+      try {
+        inspected = await inspectFacePhoto(prepared, kind);
+      } catch {
+        inspected = {
+          quality: {
+            usable: false,
+            brightness: 0,
+            sharpness: 0,
+            faceCount: 0,
+            pose: "未检测",
+            messages: ["自动检查暂未完成；不影响继续，正式建议前请按拍摄标准复核"],
+          },
+        };
+      }
+
+      const currentCapture = capturesRef.current.find((capture) => capture.kind === kind);
+      if (currentCapture?.blob !== prepared) return;
+      if (kind === "front" && inspected.landmarks) {
+        frontLandmarksRef.current = inspected.landmarks;
+      }
+      const next = capturesRef.current.map((capture) => capture.kind === kind ? { ...capture, quality: inspected.quality } : capture);
+      capturesRef.current = next;
+      setCaptures(next);
+      const nextProfile = createFaceProfile(next, frontLandmarksRef.current);
+      setFaceProfile(nextProfile);
       await Promise.all([
         saveLocal<StoredCapture[]>("faces", next.map(({ preview: _preview, ...capture }) => capture)),
         saveLocal("faceProfile", nextProfile),
       ]);
     } catch {
-      const quality = {
-        usable: false,
-        brightness: 0,
-        sharpness: 0,
-        faceCount: 0,
-        pose: "未检测" as const,
-        messages: ["面部模型暂未完成加载，请检查网络后重试"],
-      };
-      const next = nextBase.map((capture) => capture.kind === kind ? { ...capture, quality } : capture);
-      const nextProfile = createFaceProfile(next, frontLandmarks);
-      setCaptures(next);
-      setFaceProfile(nextProfile);
-      await Promise.all([
-        saveLocal<StoredCapture[]>("faces", next.map(({ preview: _preview, ...capture }) => capture)),
-        saveLocal("faceProfile", nextProfile),
-      ]);
+      setCaptureMessage("这张照片没有成功保存，请换一张或重新拍摄。");
+    } finally {
+      setInspectingCaptures((current) => current.filter((item) => item !== kind));
     }
   };
 
   const finishFace = () => {
-    const nextProfile = createFaceProfile(captures, frontLandmarks);
+    const nextProfile = createFaceProfile(capturesRef.current, frontLandmarksRef.current);
     setFaceProfile(nextProfile);
     void saveLocal("faceProfile", nextProfile);
     if (!nextProfile.captureReady) return;
@@ -443,8 +484,11 @@ function App() {
     captures.forEach((capture) => releasePreview(capture.preview));
     setReferences([]);
     setCaptures([]);
+    capturesRef.current = [];
+    frontLandmarksRef.current = undefined;
     setProfile(undefined);
     setFaceProfile(undefined);
+    setCaptureMessage("");
     setCaptureAttested(false);
     setPreferences(DEFAULT_PREFERENCES);
     setSelections(DEFAULT_SELECTIONS);
@@ -504,13 +548,25 @@ function App() {
               )}
             </div>
 
-            <label className="upload-zone">
-              <input type="file" accept="image/*" multiple disabled={preparingReferences || analyzing} onChange={(event) => addReferences(event.target.files)} />
+            <div className="upload-zone">
+              <input
+                ref={referenceInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif"
+                multiple
+                disabled={preparingReferences || analyzing}
+                onChange={(event) => {
+                  void addReferences(event.currentTarget.files);
+                  event.currentTarget.value = "";
+                }}
+              />
               <span className="upload-icon"><Images size={28} /></span>
               <strong>从相册选择收藏图或截图</strong>
-              <span>支持一次选择多张，建议 12–20 张</span>
-              <span className="upload-action"><Upload size={15} /> 选择图片</span>
-            </label>
+              <span>一次可批量选择，建议 12–20 张，最多 24 张</span>
+              <button className="upload-action" type="button" disabled={preparingReferences || analyzing} onClick={() => referenceInputRef.current?.click()}>
+                <Upload size={15} /> 批量选择图片
+              </button>
+            </div>
 
             {references.length > 0 && (
               <div className="reference-section">
@@ -624,7 +680,7 @@ function App() {
             <div className="screen-heading compact">
               <span className="step-label">STEP 3 · 真实面部</span>
               <h1>关掉美颜，<br />先看清真实起点</h1>
-              <p>自然光、原相机 1×、摘掉眼镜。照片只保存在当前设备。</p>
+              <p>至少提供一张正脸和任一侧脸；左右侧都补充会更准确。照片质量检查只做提示，不会阻断本次体验。</p>
             </div>
 
             <div className="capture-guide">
@@ -636,21 +692,30 @@ function App() {
             <div className="capture-stack">
               {CAPTURES.map((slot) => {
                 const capture = captures.find((item) => item.kind === slot.kind);
+                const inspecting = inspectingCaptures.includes(slot.kind);
                 return (
-                  <article className={`capture-card ${capture?.quality?.usable ? "ready" : ""}`} key={slot.kind}>
+                  <article className={`capture-card ${capture ? "captured" : ""} ${capture?.quality?.usable ? "ready" : ""}`} key={slot.kind}>
                     {capture ? <img src={capture.preview} alt={slot.label} /> : <div className="capture-placeholder"><Camera size={25} /></div>}
                     <div className="capture-copy">
-                      <div><strong>{slot.label}</strong><span>{slot.note}</span></div>
-                      {capture?.quality ? (
+                      <div className="capture-title"><strong>{slot.label}</strong><b>{slot.requirement}</b><span>{slot.note}</span></div>
+                      {inspecting ? (
+                        <div className="quality checking"><LoaderCircle size={15} className="spin" /><span>{capture ? "后台检查中，不影响继续" : "正在保存照片"}</span></div>
+                      ) : capture?.quality ? (
                         <div className={capture.quality.usable ? "quality ok" : "quality warn"}>
                           {capture.quality.usable ? <Check size={15} /> : <CircleAlert size={15} />}
-                          <span>{capture.quality.usable ? "照片合格" : capture.quality.messages[0] ?? "需要重拍"}</span>
+                          <span>{capture.quality.usable ? "照片质量良好" : capture.quality.messages[0] ?? "建议重拍；本次仍可继续"}</span>
                         </div>
+                      ) : capture ? (
+                        <div className="quality saved"><Check size={15} /><span>照片已保存，自动检查待完成</span></div>
                       ) : <ChevronRight size={20} />}
                       <div className="capture-actions">
-                        <CameraCapture kind={slot.kind} label={slot.label} onCapture={(file) => setCapture(slot.kind, file)} />
+                        <CameraCapture kind={slot.kind} label={slot.label} onCapture={(file) => void setCapture(slot.kind, file)} />
                         <label className="library-upload">
-                          <input type="file" accept="image/*" onChange={(event) => setCapture(slot.kind, event.target.files?.[0])} />
+                          <input type="file" accept="image/*,.heic,.heif,.avif" onChange={(event) => {
+                            const file = event.currentTarget.files?.[0];
+                            event.currentTarget.value = "";
+                            void setCapture(slot.kind, file);
+                          }} />
                           <Upload size={15} /> 相册
                         </label>
                       </div>
@@ -660,6 +725,14 @@ function App() {
               })}
             </div>
 
+            <div className={`capture-minimum ${faceMinimum.hasFront && faceMinimum.hasSide ? "ok" : "pending"}`}>
+              {faceMinimum.hasFront && faceMinimum.hasSide ? <Check size={17} /> : <CircleAlert size={17} />}
+              <span>{faceMinimum.hasFront && faceMinimum.hasSide
+                ? "正脸与侧脸已齐，可以继续；自动检查会在后台完成。"
+                : `还需要${!faceMinimum.hasFront ? "一张正脸" : ""}${!faceMinimum.hasFront && !faceMinimum.hasSide ? "和" : ""}${!faceMinimum.hasSide ? "任一侧脸" : ""}。`}</span>
+            </div>
+            {captureMessage && <p className="inline-message">{captureMessage}</p>}
+
             <label className="capture-attestation">
               <input type="checkbox" checked={captureAttested} onChange={(event) => setCaptureAttested(event.target.checked)} />
               <span><strong>我确认这组照片来自原相机</strong><small>无美颜、无修图、已摘眼镜，拍摄于自然光下</small></span>
@@ -667,7 +740,7 @@ function App() {
 
             {faceProfile && (
               <div className={`capture-summary ${faceProfile.captureReady ? "ok" : "warn"}`}>
-                <strong>{faceProfile.captureReady ? "面部基线已建立" : "当前为临时基线"}</strong>
+                <strong>{faceProfile.captureReady ? "面部基线可用" : "还差一张必要照片"}</strong>
                 {faceProfile.summary.map((line) => <span key={line}>{line}</span>)}
               </div>
             )}
