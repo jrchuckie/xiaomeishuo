@@ -8,6 +8,7 @@ const KEYS = {
   preferences: "xiaomeishuo.preferences.v3",
   selections: "xiaomeishuo.selections.v2",
   plan: "xiaomeishuo.plan.v3",
+  progress: "xiaomeishuo.progress.v1",
 } as const;
 
 const LEGACY_KEYS = [
@@ -26,6 +27,10 @@ export async function saveLocal<T>(key: keyof typeof KEYS, value: T) {
 
 export async function loadLocal<T>(key: keyof typeof KEYS): Promise<T | undefined> {
   return get<T>(KEYS[key]);
+}
+
+export async function removeLocal(key: keyof typeof KEYS) {
+  await del(KEYS[key]);
 }
 
 export async function clearLocalSession() {

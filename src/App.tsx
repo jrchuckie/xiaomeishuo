@@ -26,8 +26,9 @@ import FeatureDirectionPicker from "./components/FeatureDirectionPicker";
 import { analyzeAesthetic, STYLE_OPTIONS } from "./lib/aesthetic";
 import { importBoardThroughAuthorizedAdapter, parseXhsBoardLink } from "./lib/board";
 import { createFaceProfile, inspectFacePhoto } from "./lib/face";
+import { optimizeImageFile, releasePreview } from "./lib/image";
 import { generatePlan } from "./lib/planner";
-import { clearLocalSession, loadLocal, saveLocal } from "./lib/storage";
+import { clearLocalSession, loadLocal, removeLocal, saveLocal } from "./lib/storage";
 import type {
   AestheticProfile,
   CaptureKind,
@@ -43,6 +44,13 @@ import type {
 type Screen = "source" | "profile" | "face" | "preferences" | "direction" | "plan";
 type StoredImage = Omit<SourceImage, "preview">;
 type StoredCapture = Omit<FaceCapture, "preview">;
+type WorkflowProgress = {
+  screen: Screen;
+  calibration: string[];
+  captureAttested: boolean;
+  analyzing: boolean;
+  updatedAt: number;
+};
 
 type InstallPrompt = Event & {
   prompt: () => Promise<void>;
@@ -104,6 +112,31 @@ const DEFAULT_SELECTIONS: FeatureSelections = {
   hair: "短发利落",
 };
 
+function resumableScreen(
+  requested: Screen | undefined,
+  data: {
+    profile?: AestheticProfile;
+    faceProfile?: FaceProfile;
+    preferences: UserPreferences;
+    plan?: PersonalPlan;
+  },
+): Screen {
+  const canOpen: Record<Screen, boolean> = {
+    source: true,
+    profile: Boolean(data.profile),
+    face: Boolean(data.profile),
+    preferences: Boolean(data.faceProfile?.captureReady),
+    direction: Boolean(data.faceProfile?.captureReady && data.preferences.priorities.length),
+    plan: Boolean(data.plan && data.profile && data.faceProfile?.captureReady),
+  };
+  if (requested && canOpen[requested]) return requested;
+  if (canOpen.plan) return "plan";
+  if (canOpen.direction) return "direction";
+  if (canOpen.preferences) return "preferences";
+  if (canOpen.profile) return "profile";
+  return "source";
+}
+
 function selectionsFromProfile(profile: AestheticProfile): FeatureSelections {
   const byKey = Object.fromEntries(profile.features.map((feature) => [feature.key, feature.choice]));
   return {
@@ -128,6 +161,7 @@ function App() {
   const [analysisMessage, setAnalysisMessage] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analyzing, setAnalyzing] = useState(false);
+  const [preparingReferences, setPreparingReferences] = useState(false);
   const [captures, setCaptures] = useState<FaceCapture[]>([]);
   const [frontLandmarks, setFrontLandmarks] = useState<{ x: number; y: number }[]>();
   const [faceProfile, setFaceProfile] = useState<FaceProfile>();
@@ -139,32 +173,64 @@ function App() {
   const [showInstall, setShowInstall] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
+  const progressSnapshot = (nextScreen = screen, isAnalyzing = analyzing): WorkflowProgress => ({
+    screen: nextScreen,
+    calibration,
+    captureAttested,
+    analyzing: isAnalyzing,
+    updatedAt: Date.now(),
+  });
+
+  const goToScreen = (nextScreen: Screen) => {
+    setScreen(nextScreen);
+    void saveLocal("progress", progressSnapshot(nextScreen, false));
+  };
+
   useEffect(() => {
     const restore = async () => {
-      const [storedReferences, storedCaptures, storedProfile, storedFaceProfile, storedPreferences, storedSelections, storedPlan] = await Promise.all([
-        loadLocal<StoredImage[]>("references"),
-        loadLocal<StoredCapture[]>("faces"),
-        loadLocal<AestheticProfile>("profile"),
-        loadLocal<FaceProfile>("faceProfile"),
-        loadLocal<UserPreferences>("preferences"),
-        loadLocal<FeatureSelections>("selections"),
-        loadLocal<PersonalPlan>("plan"),
-      ]);
-      if (storedReferences) {
-        setReferences(storedReferences.map((image) => ({ ...image, preview: URL.createObjectURL(image.blob) })));
+      try {
+        const [storedReferences, storedCaptures, storedProfile, storedFaceProfile, storedPreferences, storedSelections, storedPlan, storedProgress] = await Promise.all([
+          loadLocal<StoredImage[]>("references"),
+          loadLocal<StoredCapture[]>("faces"),
+          loadLocal<AestheticProfile>("profile"),
+          loadLocal<FaceProfile>("faceProfile"),
+          loadLocal<UserPreferences>("preferences"),
+          loadLocal<FeatureSelections>("selections"),
+          loadLocal<PersonalPlan>("plan"),
+          loadLocal<WorkflowProgress>("progress"),
+        ]);
+        const restoredPreferences = storedPreferences ? { ...DEFAULT_PREFERENCES, ...storedPreferences } : DEFAULT_PREFERENCES;
+        const restoredPlan = storedPlan && storedProfile && storedFaceProfile?.captureReady ? storedPlan : undefined;
+        if (storedReferences) {
+          setReferences(storedReferences.map((image) => ({ ...image, preview: URL.createObjectURL(image.blob) })));
+        }
+        if (storedCaptures) {
+          setCaptures(storedCaptures.map((capture) => ({ ...capture, preview: URL.createObjectURL(capture.blob) })));
+        }
+        if (storedProfile) setProfile(storedProfile);
+        if (storedFaceProfile) {
+          setFaceProfile(storedFaceProfile);
+          setFrontLandmarks(storedFaceProfile.landmarks);
+        }
+        setPreferences(restoredPreferences);
+        if (storedSelections) setSelections(storedSelections);
+        if (restoredPlan) setPlan(restoredPlan);
+        if (storedProgress?.calibration?.length) setCalibration(storedProgress.calibration);
+        if (storedProgress?.captureAttested) setCaptureAttested(true);
+        setScreen(resumableScreen(storedProgress?.screen, {
+          profile: storedProfile,
+          faceProfile: storedFaceProfile,
+          preferences: restoredPreferences,
+          plan: restoredPlan,
+        }));
+        if (storedProgress?.analyzing && !storedProfile && storedReferences?.length) {
+          setAnalysisMessage("上次分析被手机中断，已恢复全部图片。点击下方按钮即可继续。");
+        }
+      } catch {
+        setAnalysisMessage("本地档案恢复失败，请重新打开一次；已上传图片不会发送到服务器。");
+      } finally {
+        setHydrated(true);
       }
-      if (storedCaptures) {
-        setCaptures(storedCaptures.map((capture) => ({ ...capture, preview: URL.createObjectURL(capture.blob) })));
-      }
-      if (storedProfile) setProfile(storedProfile);
-      if (storedFaceProfile) {
-        setFaceProfile(storedFaceProfile);
-        setFrontLandmarks(storedFaceProfile.landmarks);
-      }
-      if (storedPreferences) setPreferences({ ...DEFAULT_PREFERENCES, ...storedPreferences });
-      if (storedSelections) setSelections(storedSelections);
-      if (storedPlan && storedProfile && storedFaceProfile?.captureReady) setPlan(storedPlan);
-      setHydrated(true);
     };
     void restore();
 
@@ -175,6 +241,11 @@ function App() {
     window.addEventListener("beforeinstallprompt", onInstall);
     return () => window.removeEventListener("beforeinstallprompt", onInstall);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    void saveLocal("progress", progressSnapshot());
+  }, [screen, calibration, captureAttested, analyzing, hydrated]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -200,21 +271,44 @@ function App() {
 
   const addReferences = async (files: FileList | null) => {
     if (!files?.length) return;
-    const additions = Array.from(files)
+    const selectedFiles = Array.from(files)
       .filter((file) => file.type.startsWith("image/"))
-      .slice(0, Math.max(0, 24 - references.length))
-      .map((file) => ({ id: crypto.randomUUID(), name: file.name, blob: file, preview: URL.createObjectURL(file) }));
-    const next = [...references, ...additions];
-    setReferences(next);
-    await saveLocal<StoredImage[]>("references", next.map(({ preview: _preview, ...image }) => image));
+      .slice(0, Math.max(0, 24 - references.length));
+    if (!selectedFiles.length) return;
+
+    setPreparingReferences(true);
+    setAnalysisMessage(`正在优化并保存 0 / ${selectedFiles.length} 张图片`);
+    setProfile(undefined);
+    setPlan(undefined);
+    await Promise.all([removeLocal("profile"), removeLocal("plan")]);
+    let next = [...references];
+    try {
+      for (let index = 0; index < selectedFiles.length; index += 1) {
+        const file = await optimizeImageFile(selectedFiles[index], 1440, 0.86);
+        next = [...next, { id: crypto.randomUUID(), name: file.name, blob: file, preview: URL.createObjectURL(file) }];
+        setReferences(next);
+        await saveLocal<StoredImage[]>("references", next.map(({ preview: _preview, ...image }) => image));
+        setAnalysisMessage(`正在优化并保存 ${index + 1} / ${selectedFiles.length} 张图片`);
+      }
+      setAnalysisMessage(`已在本机安全保存 ${next.length} 张图片`);
+    } catch {
+      setAnalysisMessage("部分图片处理失败，已保存成功导入的图片，可继续添加。");
+    } finally {
+      setPreparingReferences(false);
+    }
   };
 
   const removeReference = async (id: string) => {
+    releasePreview(references.find((image) => image.id === id)?.preview);
     const next = references.filter((image) => image.id !== id);
     setReferences(next);
     setProfile(undefined);
     setPlan(undefined);
-    await saveLocal<StoredImage[]>("references", next.map(({ preview: _preview, ...image }) => image));
+    await Promise.all([
+      saveLocal<StoredImage[]>("references", next.map(({ preview: _preview, ...image }) => image)),
+      removeLocal("profile"),
+      removeLocal("plan"),
+    ]);
   };
 
   const validateBoard = async () => {
@@ -245,6 +339,8 @@ function App() {
     }
     setAnalyzing(true);
     setAnalysisProgress(0);
+    setAnalysisMessage("正在准备本地分析");
+    await saveLocal("progress", progressSnapshot(screen, true));
     try {
       const result = await analyzeAesthetic(images, calibration, (message, progress) => {
         setAnalysisMessage(message);
@@ -254,10 +350,16 @@ function App() {
       const nextSelections = selectionsFromProfile(result);
       setSelections(nextSelections);
       setPlan(undefined);
-      await Promise.all([saveLocal("profile", result), saveLocal("selections", nextSelections)]);
+      const nextScreen = navigate ? "profile" : screen;
+      await Promise.all([
+        saveLocal("profile", result),
+        saveLocal("selections", nextSelections),
+        saveLocal("progress", progressSnapshot(nextScreen, false)),
+      ]);
       if (navigate) setScreen("profile");
     } catch {
-      setAnalysisMessage("本地模型暂未完成加载，请检查网络后重试；你的图片没有上传。");
+      setAnalysisMessage("本地分析没有完成。图片和当前进度已保存，可以再次尝试。");
+      await saveLocal("progress", progressSnapshot(screen, false));
     } finally {
       setAnalyzing(false);
     }
@@ -274,12 +376,14 @@ function App() {
 
   const setCapture = async (kind: CaptureKind, file?: File) => {
     if (!file) return;
-    const preview = URL.createObjectURL(file);
-    const base: FaceCapture = { kind, name: file.name, blob: file, preview };
+    const prepared = await optimizeImageFile(file, 1600, 0.9);
+    releasePreview(captures.find((capture) => capture.kind === kind)?.preview);
+    const preview = URL.createObjectURL(prepared);
+    const base: FaceCapture = { kind, name: prepared.name, blob: prepared, preview };
     const nextBase = [...captures.filter((capture) => capture.kind !== kind), base];
     setCaptures(nextBase);
     try {
-      const inspected = await inspectFacePhoto(file, kind);
+      const inspected = await inspectFacePhoto(prepared, kind);
       if (kind === "front" && inspected.landmarks) setFrontLandmarks(inspected.landmarks);
       const next = nextBase.map((capture) => capture.kind === kind ? { ...capture, quality: inspected.quality } : capture);
       setCaptures(next);
@@ -315,13 +419,13 @@ function App() {
     setFaceProfile(nextProfile);
     void saveLocal("faceProfile", nextProfile);
     if (!nextProfile.captureReady) return;
-    setScreen("preferences");
+    goToScreen("preferences");
   };
 
   const finishPreferences = async () => {
     await saveLocal("preferences", preferences);
     setPlan(undefined);
-    setScreen("direction");
+    goToScreen("direction");
   };
 
   const finishDirection = async () => {
@@ -330,11 +434,13 @@ function App() {
     const nextPlan = generatePlan(profile, faceProfile, preferences, selections);
     setPlan(nextPlan);
     await saveLocal("plan", nextPlan);
-    setScreen("plan");
+    goToScreen("plan");
   };
 
   const resetAll = async () => {
     await clearLocalSession();
+    references.forEach((image) => releasePreview(image.preview));
+    captures.forEach((capture) => releasePreview(capture.preview));
     setReferences([]);
     setCaptures([]);
     setProfile(undefined);
@@ -343,6 +449,7 @@ function App() {
     setPreferences(DEFAULT_PREFERENCES);
     setSelections(DEFAULT_SELECTIONS);
     setPlan(undefined);
+    setAnalysisMessage("");
     setScreen("source");
   };
 
@@ -363,7 +470,7 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <button className="brand" type="button" onClick={() => setScreen("source")} aria-label="返回首页">
+        <button className="brand" type="button" onClick={() => goToScreen("source")} aria-label="返回首页">
           <span className="brand-mark"><i /><i /></span>
           <span>小美说</span>
         </button>
@@ -398,7 +505,7 @@ function App() {
             </div>
 
             <label className="upload-zone">
-              <input type="file" accept="image/*" multiple onChange={(event) => addReferences(event.target.files)} />
+              <input type="file" accept="image/*" multiple disabled={preparingReferences || analyzing} onChange={(event) => addReferences(event.target.files)} />
               <span className="upload-icon"><Images size={28} /></span>
               <strong>从相册选择收藏图或截图</strong>
               <span>支持一次选择多张，建议 12–20 张</span>
@@ -435,15 +542,15 @@ function App() {
 
             {analyzing && <div className="analysis-progress"><div style={{ width: `${analysisProgress * 100}%` }} /><span>{analysisMessage}</span></div>}
             {!analyzing && analysisMessage && <p className="inline-message">{analysisMessage}</p>}
-            <button className="primary-button" type="button" onClick={runAnalysis} disabled={analyzing || references.length < 3}>
-              {analyzing ? <><LoaderCircle size={19} className="spin" /> 正在学习你的审美</> : <>生成我的审美画像 <ArrowRight size={19} /></>}
+            <button className="primary-button" type="button" onClick={runAnalysis} disabled={preparingReferences || analyzing || references.length < 3}>
+              {preparingReferences ? <><LoaderCircle size={19} className="spin" /> 正在安全保存图片</> : analyzing ? <><LoaderCircle size={19} className="spin" /> 正在学习你的审美</> : <>生成我的审美画像 <ArrowRight size={19} /></>}
             </button>
           </section>
         )}
 
         {screen === "profile" && profile && (
           <section className="screen profile-screen">
-            <BackButton onClick={() => setScreen("source")} />
+            <BackButton onClick={() => goToScreen("source")} />
             <div className="screen-heading compact">
               <span className="step-label">STEP 2 · 审美画像</span>
               <h1>每个判断，<br />都回到你的样本</h1>
@@ -507,13 +614,13 @@ function App() {
               ))}
             </div>
 
-            <button className="primary-button" type="button" onClick={() => setScreen("face")}>建立我的真实面部基线 <ScanFace size={19} /></button>
+            <button className="primary-button" type="button" onClick={() => goToScreen("face")}>建立我的真实面部基线 <ScanFace size={19} /></button>
           </section>
         )}
 
         {screen === "face" && (
           <section className="screen face-screen">
-            <BackButton onClick={() => setScreen(profile ? "profile" : "source")} />
+            <BackButton onClick={() => goToScreen(profile ? "profile" : "source")} />
             <div className="screen-heading compact">
               <span className="step-label">STEP 3 · 真实面部</span>
               <h1>关掉美颜，<br />先看清真实起点</h1>
@@ -571,7 +678,7 @@ function App() {
 
         {screen === "preferences" && (
           <section className="screen preferences-screen">
-            <BackButton onClick={() => setScreen("face")} />
+            <BackButton onClick={() => goToScreen("face")} />
             <div className="screen-heading compact">
               <span className="step-label">STEP 4 · 决策边界</span>
               <h1>先说清楚，<br />什么你愿意、什么不愿意</h1>
@@ -635,7 +742,7 @@ function App() {
 
         {screen === "direction" && (
           <section className="screen direction-screen">
-            <BackButton onClick={() => setScreen("preferences")} />
+            <BackButton onClick={() => goToScreen("preferences")} />
             <div className="screen-heading compact">
               <span className="step-label">STEP 5 · 方向沙盘</span>
               <h1>别给我一个答案，<br />让我亲自比较</h1>
@@ -667,7 +774,7 @@ function App() {
 
         {screen === "plan" && plan && (
           <section className="screen plan-screen">
-            <BackButton onClick={() => setScreen("direction")} />
+            <BackButton onClick={() => goToScreen("direction")} />
             <div className="plan-title">
               <span>STEP 6 · MY IDEAL ME PLAN</span>
               <h1>{plan.headline}</h1>
@@ -720,8 +827,8 @@ function App() {
             </div>
 
             <div className="medical-boundary"><CircleAlert size={20} /><p><strong>这是审美决策支持，不是诊断或处方。</strong><br />材料、剂量、适应证和风险必须由合规医生在面诊后确认。</p></div>
-            <button className="secondary-button" type="button" onClick={() => setScreen("direction")}><SlidersHorizontal size={18} /> 调整五官方向</button>
-            <button className="secondary-button" type="button" onClick={() => setScreen("source")}><RefreshCcw size={18} /> 更新审美样本</button>
+            <button className="secondary-button" type="button" onClick={() => goToScreen("direction")}><SlidersHorizontal size={18} /> 调整五官方向</button>
+            <button className="secondary-button" type="button" onClick={() => goToScreen("source")}><RefreshCcw size={18} /> 更新审美样本</button>
             <button className="danger-link" type="button" onClick={resetAll}><Trash2 size={15} /> 删除全部本地数据</button>
           </section>
         )}
@@ -736,7 +843,7 @@ function App() {
             aria-current={screen === item ? "step" : undefined}
             disabled={!available[item]}
             className={screen === item ? "active" : completed[item] ? "complete" : ""}
-            onClick={() => available[item] && setScreen(item)}
+            onClick={() => available[item] && goToScreen(item)}
           >
             <span>{completed[item] ? <Check size={13} /> : index + 1}</span>
           </button>

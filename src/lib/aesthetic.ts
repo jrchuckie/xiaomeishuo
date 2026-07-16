@@ -6,6 +6,7 @@ import type {
   SourceImage,
   StyleScore,
 } from "../types";
+import { resizeImageBlob } from "./image";
 
 const STYLE_LABELS = [
   { key: "natural", label: "自然原生", prompt: "natural understated beauty, authentic face, minimal styling" },
@@ -111,7 +112,10 @@ async function loadClassifier(onProgress?: (message: string) => void) {
         "Xenova/clip-vit-base-patch32",
         { dtype: "q8" },
       );
-    })();
+    })().catch((error) => {
+      classifierPromise = null;
+      throw error;
+    });
   }
   return classifierPromise;
 }
@@ -163,17 +167,18 @@ async function imageStats(blob: Blob) {
 
 async function contactSheet(images: SourceImage[]) {
   const selected = images.slice(0, 12);
-  const bitmaps = await Promise.all(selected.map((image) => createImageBitmap(image.blob)));
   const columns = 3;
-  const rows = Math.ceil(bitmaps.length / columns);
-  const cell = 256;
+  const rows = Math.ceil(selected.length / columns);
+  const cell = 192;
   const canvas = document.createElement("canvas");
   canvas.width = columns * cell;
   canvas.height = Math.max(cell, rows * cell);
   const context = canvas.getContext("2d")!;
   context.fillStyle = "#f2f2f2";
   context.fillRect(0, 0, canvas.width, canvas.height);
-  bitmaps.forEach((bitmap, index) => {
+  for (let index = 0; index < selected.length; index += 1) {
+    const compact = await resizeImageBlob(selected[index].blob, 640, 0.82);
+    const bitmap = await createImageBitmap(compact);
     const x = (index % columns) * cell;
     const y = Math.floor(index / columns) * cell;
     const scale = Math.max(cell / bitmap.width, cell / bitmap.height);
@@ -181,7 +186,8 @@ async function contactSheet(images: SourceImage[]) {
     const height = bitmap.height * scale;
     context.drawImage(bitmap, x + (cell - width) / 2, y + (cell - height) / 2, width, height);
     bitmap.close();
-  });
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("CONTACT_SHEET_FAILED")), "image/jpeg", 0.88));
 }
 
@@ -255,7 +261,12 @@ export async function analyzeAesthetic(
   onProgress?: (message: string, progress?: number) => void,
 ): Promise<AestheticProfile> {
   const selected = images.slice(0, 12);
-  const stats = await Promise.all(selected.map((image) => imageStats(image.blob)));
+  const stats: Awaited<ReturnType<typeof imageStats>>[] = [];
+  for (let index = 0; index < selected.length; index += 1) {
+    onProgress?.(`正在准备第 ${index + 1} / ${selected.length} 张样本`, (index / selected.length) * 0.04);
+    stats.push(await imageStats(selected[index].blob));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
   let scores = fallbackScores(stats);
   let evidence: AestheticEvidence[] = selected.map((image) => ({
     sourceId: image.id,
@@ -276,12 +287,11 @@ export async function analyzeAesthetic(
 
     for (let index = 0; index < selected.length; index += 1) {
       onProgress?.(`正在核验并理解第 ${index + 1} / ${selected.length} 张样本`, 0.1 + (index / selected.length) * 0.58);
-      const url = URL.createObjectURL(selected[index].blob);
+      const compact = await resizeImageBlob(selected[index].blob, 640, 0.82);
+      const url = URL.createObjectURL(compact);
       try {
-        const [styleOutput, trustOutput] = await Promise.all([
-          classifier(url, STYLE_LABELS.map((style) => style.prompt)) as Promise<{ label: string; score: number }[]>,
-          classifier(url, TRUST_LABELS.map((item) => item.prompt)) as Promise<{ label: string; score: number }[]>,
-        ]);
+        const styleOutput = await classifier(url, STYLE_LABELS.map((style) => style.prompt)) as { label: string; score: number }[];
+        const trustOutput = await classifier(url, TRUST_LABELS.map((item) => item.prompt)) as { label: string; score: number }[];
         const dominant = STYLE_LABELS.find((item) => item.prompt === styleOutput[0]?.label);
         const trust = trustFromOutput(trustOutput);
         const excludedByTrust = trust.trust === "疑似合成" || trust.trust === "疑似重修";
@@ -303,6 +313,7 @@ export async function analyzeAesthetic(
       } finally {
         URL.revokeObjectURL(url);
       }
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     }
 
     if (includedCount > 0) {
