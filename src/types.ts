@@ -16,6 +16,7 @@ export type EvidenceTrust = "较可信" | "疑似合成" | "疑似重修" | "待
 export type AestheticEvidence = {
   sourceId: string;
   sourceName: string;
+  thumbnail?: Blob;
   dominantStyle: string;
   trust: EvidenceTrust;
   trustScore: number;

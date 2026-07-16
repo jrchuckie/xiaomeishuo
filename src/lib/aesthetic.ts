@@ -262,15 +262,23 @@ export async function analyzeAesthetic(
 ): Promise<AestheticProfile> {
   const selected = images.slice(0, 12);
   const stats: Awaited<ReturnType<typeof imageStats>>[] = [];
+  const evidenceThumbnails = new Map<string, Blob>();
   for (let index = 0; index < selected.length; index += 1) {
     onProgress?.(`正在准备第 ${index + 1} / ${selected.length} 张样本`, (index / selected.length) * 0.04);
-    stats.push(await imageStats(selected[index].blob));
+    const image = selected[index];
+    const [imageStat, thumbnail] = await Promise.all([
+      imageStats(image.blob),
+      resizeImageBlob(image.blob, 480, 0.74),
+    ]);
+    stats.push(imageStat);
+    evidenceThumbnails.set(image.id, thumbnail);
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
   let scores = fallbackScores(stats);
   let evidence: AestheticEvidence[] = selected.map((image) => ({
     sourceId: image.id,
     sourceName: image.name,
+    thumbnail: evidenceThumbnails.get(image.id),
     dominantStyle: "待校准",
     trust: "待人工核实",
     trustScore: 0,
@@ -305,6 +313,7 @@ export async function analyzeAesthetic(
         nextEvidence.push({
           sourceId: selected[index].id,
           sourceName: selected[index].name,
+          thumbnail: evidenceThumbnails.get(selected[index].id),
           dominantStyle: dominant?.label ?? "信息不足",
           trust: trust.trust,
           trustScore: trust.score,

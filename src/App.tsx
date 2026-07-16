@@ -19,7 +19,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import CameraCapture from "./components/CameraCapture";
 import FaceSimulation from "./components/FaceSimulation";
 import FeatureDirectionPicker from "./components/FeatureDirectionPicker";
@@ -156,7 +156,6 @@ function App() {
   const [boardStatus, setBoardStatus] = useState(BOARD_STATUS_DEFAULT);
   const [boardTone, setBoardTone] = useState<"idle" | "ok" | "warn">("idle");
   const [references, setReferences] = useState<SourceImage[]>([]);
-  const referenceInputRef = useRef<HTMLInputElement>(null);
   const [calibration, setCalibration] = useState<string[]>(["natural"]);
   const [profile, setProfile] = useState<AestheticProfile>();
   const [analysisMessage, setAnalysisMessage] = useState("");
@@ -312,7 +311,7 @@ function App() {
         await saveLocal<StoredImage[]>("references", next.map(({ preview: _preview, ...image }) => image));
         setAnalysisMessage(`正在优化并保存 ${index + 1} / ${selectedFiles.length} 张图片`);
       }
-      setAnalysisMessage(`已在本机安全保存 ${next.length} 张图片`);
+      setAnalysisMessage(`本次已保存 ${selectedFiles.length} 张，共 ${next.length} 张；可继续批量追加。`);
     } catch {
       setAnalysisMessage("部分图片处理失败，已保存成功导入的图片，可继续添加。");
     } finally {
@@ -549,23 +548,22 @@ function App() {
             </div>
 
             <div className="upload-zone">
-              <input
-                ref={referenceInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif"
-                multiple
-                disabled={preparingReferences || analyzing}
-                onChange={(event) => {
-                  void addReferences(event.currentTarget.files);
-                  event.currentTarget.value = "";
-                }}
-              />
               <span className="upload-icon"><Images size={28} /></span>
               <strong>从相册选择收藏图或截图</strong>
               <span>一次可批量选择，建议 12–20 张，最多 24 张</span>
-              <button className="upload-action" type="button" disabled={preparingReferences || analyzing} onClick={() => referenceInputRef.current?.click()}>
+              <label className={`upload-action batch-picker ${preparingReferences || analyzing ? "disabled" : ""}`} aria-disabled={preparingReferences || analyzing}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={preparingReferences || analyzing}
+                  onChange={(event) => {
+                    void addReferences(event.currentTarget.files);
+                    event.currentTarget.value = "";
+                  }}
+                />
                 <Upload size={15} /> 批量选择图片
-              </button>
+              </label>
             </div>
 
             {references.length > 0 && (
@@ -574,7 +572,7 @@ function App() {
                 <div className="reference-grid">
                   {references.map((image) => (
                     <figure key={image.id}>
-                      <img src={image.preview} alt="审美参考" />
+                      <BlobImage blob={image.blob} alt="审美参考" />
                       <button type="button" onClick={() => removeReference(image.id)} aria-label="删除图片"><Trash2 size={15} /></button>
                     </figure>
                   ))}
@@ -621,20 +619,22 @@ function App() {
             </div>
 
             <div className="evidence-heading">
-              <div><span>你的样本证据</span><strong>{profile.evidence.filter((item) => item.trust !== "较可信").length} 张建议复核</strong></div>
-              <p>模型只做风险提醒，不做真假鉴定。合成或重修风险较高的样本默认不进入画像。</p>
+              <div><span>哪些样本进入了画像</span><strong>{profile.usableCount} 张已纳入</strong></div>
+              <p>每张图片都保留原图证据。疑似合成或重修的样本已排除；无法确认的图片会标记为待核实。</p>
             </div>
             <div className="evidence-scroll">
               {profile.evidence.map((evidence) => {
-                const source = references.find((image) => image.id === evidence.sourceId);
+                const source = references.find((image) => image.id === evidence.sourceId)
+                  ?? references.find((image) => image.name === evidence.sourceName);
                 const suspect = evidence.trust === "疑似合成" || evidence.trust === "疑似重修";
                 const neutral = evidence.trust === "待人工核实";
+                const status = suspect ? "已排除" : neutral ? "暂纳入 · 待核实" : "已纳入";
                 return (
                   <article className="evidence-card" key={evidence.sourceId}>
-                    {source ? <img src={source.preview} alt={evidence.dominantStyle} /> : <div className="missing-evidence"><Images size={22} /></div>}
-                    <span className={`trust-badge ${suspect ? "suspect" : neutral ? "neutral" : "trusted"}`}>{evidence.trust}</span>
+                    <BlobImage blob={evidence.thumbnail ?? source?.blob} alt={evidence.dominantStyle} fallback={<div className="missing-evidence"><Images size={22} /><span>原图待重新载入</span></div>} />
+                    <span className={`trust-badge ${suspect ? "suspect" : neutral ? "neutral" : "trusted"}`}>{status}</span>
                     <div><strong>{evidence.dominantStyle}</strong><p>{evidence.reason}</p></div>
-                    <button type="button" onClick={() => excludeEvidence(evidence.sourceId)} disabled={analyzing}><Trash2 size={14} /> {suspect ? "排除并重算" : "不纳入画像"}</button>
+                    <button type="button" onClick={() => excludeEvidence(evidence.sourceId)} disabled={analyzing}><Trash2 size={14} /> {suspect ? "删除这张样本" : "不纳入画像"}</button>
                   </article>
                 );
               })}
@@ -941,6 +941,23 @@ function App() {
 
 function BackButton({ onClick }: { onClick: () => void }) {
   return <button className="back-button" type="button" onClick={onClick}><ArrowLeft size={20} /> 返回</button>;
+}
+
+function BlobImage({ blob, alt, fallback }: { blob?: Blob; alt: string; fallback?: ReactNode }) {
+  const [src, setSrc] = useState("");
+
+  useEffect(() => {
+    if (!blob) {
+      setSrc("");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    setSrc(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [blob]);
+
+  if (!src) return fallback ?? null;
+  return <img src={src} alt={alt} onError={() => setSrc("")} />;
 }
 
 function Axis({ label, value, opposite }: { label: string; value: number; opposite: string }) {

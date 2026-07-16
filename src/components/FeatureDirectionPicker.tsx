@@ -27,7 +27,7 @@ export default function FeatureDirectionPicker({ feature, sourceUrl, landmarks, 
     image.decode().then(() => {
       const next = Object.fromEntries(feature.options.map((option) => [
         option,
-        renderFaceSimulation(image, landmarks, { ...selections, [feature.key]: option }, 210, 280),
+        renderFaceSimulation(image, landmarks, { ...selections, [feature.key]: option }, 210, 280, 1.2),
       ]));
       if (!cancelled) {
         setPreviews(next);
