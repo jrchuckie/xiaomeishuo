@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.next/
+.wrangler/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+.DS_Store
+.env.local
+.qa-photos/
+.qa-face.html
+.qa-face.ts
