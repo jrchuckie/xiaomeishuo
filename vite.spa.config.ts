@@ -25,17 +25,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/(cdn\.jsdelivr\.net|huggingface\.co|storage\.googleapis\.com)\//,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "local-models-v1",
-              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
     }),
   ],

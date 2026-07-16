@@ -24,6 +24,13 @@ export async function createStructuredPlan(
   instructions: string,
   content: OpenAIContentPart[],
   schema: Record<string, unknown>,
+  options?: {
+    formatName?: string;
+    formatDescription?: string;
+    maxOutputTokens?: number;
+    reasoningEffort?: "low" | "medium" | "high";
+    verbosity?: "low" | "medium" | "high";
+  },
 ) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY_NOT_CONFIGURED");
@@ -39,14 +46,14 @@ export async function createStructuredPlan(
       store: false,
       instructions,
       input: [{ role: "user", content }],
-      reasoning: { effort: "medium" },
-      max_output_tokens: 28000,
+      reasoning: { effort: options?.reasoningEffort ?? "medium" },
+      max_output_tokens: options?.maxOutputTokens ?? 28000,
       text: {
-        verbosity: "medium",
+        verbosity: options?.verbosity ?? "medium",
         format: {
           type: "json_schema",
-          name: "xiaomeishuo_personal_plan",
-          description: "Personal aesthetic decision report grounded in user references, face photos, treatment history and boundaries.",
+          name: options?.formatName ?? "xiaomeishuo_personal_plan",
+          description: options?.formatDescription ?? "Personal aesthetic decision report grounded in user references, face photos, treatment history and boundaries.",
           strict: true,
           schema,
         },

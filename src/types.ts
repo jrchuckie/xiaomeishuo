@@ -43,6 +43,8 @@ export type AestheticProfile = {
   sourceCount: number;
   usableCount: number;
   localModel: boolean;
+  generatedBy?: string;
+  generatedAt?: string;
 };
 
 export type CaptureKind = "front" | "left" | "right";

@@ -24,7 +24,7 @@ import AiSimulationStudio from "./components/AiSimulationStudio";
 import CameraCapture from "./components/CameraCapture";
 import FeatureDirectionPicker from "./components/FeatureDirectionPicker";
 import TreatmentHistoryEditor from "./components/TreatmentHistoryEditor";
-import { generatePersonalPlanWithAI } from "./lib/ai";
+import { generateAestheticProfileWithAI, generatePersonalPlanWithAI } from "./lib/ai";
 import { analyzeAesthetic, STYLE_OPTIONS } from "./lib/aesthetic";
 import { importBoardThroughAuthorizedAdapter, parseXhsBoardLink } from "./lib/board";
 import { createFaceProfile, inspectFacePhoto } from "./lib/face";
@@ -368,15 +368,32 @@ function App() {
       setAnalysisMessage("至少需要 3 张参考图；建议 12–20 张");
       return;
     }
+    if (!preferences.cloudConsent) {
+      setAnalysisMessage("请先同意发送本次选择的参考图，再生成个人审美画像。");
+      return;
+    }
     setAnalyzing(true);
     setAnalysisProgress(0);
-    setAnalysisMessage("正在准备本地分析");
+    setAnalysisMessage("正在准备审美分析");
     await saveLocal("progress", progressSnapshot(screen, true));
     try {
-      const result = await analyzeAesthetic(images, calibration, (message, progress) => {
-        setAnalysisMessage(message);
-        if (progress !== undefined) setAnalysisProgress(progress);
-      });
+      let result: AestheticProfile;
+      try {
+        result = await generateAestheticProfileWithAI({
+          images,
+          calibration,
+          onProgress: (message, progress) => {
+            setAnalysisMessage(message);
+            if (progress !== undefined) setAnalysisProgress(progress);
+          },
+        });
+      } catch {
+        setAnalysisMessage("云端分析暂未完成，正在生成可继续使用的临时画像");
+        result = await analyzeAesthetic(images, calibration, (message, progress) => {
+          setAnalysisMessage(message);
+          if (progress !== undefined) setAnalysisProgress(progress);
+        }, { useClassifier: false });
+      }
       setProfile(result);
       const nextSelections = selectionsFromProfile(result);
       setSelections(nextSelections);
@@ -391,7 +408,7 @@ function App() {
       ]);
       if (navigate) setScreen("profile");
     } catch {
-      setAnalysisMessage("本地分析没有完成。图片和当前进度已保存，可以再次尝试。");
+      setAnalysisMessage("审美分析没有完成。图片和当前进度已保存，可以再次尝试。");
       await saveLocal("progress", progressSnapshot(screen, false));
     } finally {
       setAnalyzing(false);
@@ -574,7 +591,7 @@ function App() {
             <div className="screen-heading">
               <span className="step-label">STEP 1 · 理想样本</span>
               <h1>先让我看懂，<br />你真正喜欢什么</h1>
-              <p>导入小红书收藏、风格图或案例图。审美初筛先在设备上完成；只有你在方案页明确同意后，本次选中的照片才会发送给已配置的云端 AI 服务。</p>
+              <p>导入小红书收藏、风格图或案例图。OpenAI 会从你主动选择的样本中提炼个人审美，并逐张提示 AI 合成、重修和滤镜风险。</p>
             </div>
 
             <div className="board-import panel">
@@ -639,9 +656,18 @@ function App() {
               </div>
             </div>
 
+            <label className="cloud-consent source-consent">
+              <input type="checkbox" checked={preferences.cloudConsent} onChange={(event) => {
+                const next = { ...preferences, cloudConsent: event.target.checked };
+                setPreferences(next);
+                void saveLocal("preferences", next);
+              }} />
+              <span><strong>同意发送本次选中的参考图给 OpenAI 分析</strong><small>仅发送你在这里主动选择的图片，不读取相册中的其他内容；结果是审美研究，不是医疗判断。</small></span>
+            </label>
+
             {analyzing && <div className="analysis-progress"><div style={{ width: `${analysisProgress * 100}%` }} /><span>{analysisMessage}</span></div>}
             {!analyzing && analysisMessage && <p className="inline-message">{analysisMessage}</p>}
-            <button className="primary-button" type="button" onClick={runAnalysis} disabled={preparingReferences || analyzing || references.length < 3}>
+            <button className="primary-button" type="button" onClick={runAnalysis} disabled={preparingReferences || analyzing || references.length < 3 || !preferences.cloudConsent}>
               {preparingReferences ? <><LoaderCircle size={19} className="spin" /> 正在安全保存图片</> : analyzing ? <><LoaderCircle size={19} className="spin" /> 正在学习你的审美</> : <>生成我的审美画像 <ArrowRight size={19} /></>}
             </button>
           </section>
@@ -660,7 +686,7 @@ function App() {
               <span className="profile-index">IDEAL ME / 01</span>
               <h2>{profile.styles.slice(0, 3).map((style) => style.label).join(" · ")}</h2>
               <p>这不是主流审美评分，而是你长期选择中重复出现的气质、五官、肤色和造型线索。</p>
-              <span className="model-badge">{profile.localModel ? "设备端视觉模型" : "轻量分析 + 你的校准"}</span>
+              <span className="model-badge">{profile.generatedBy ? `OpenAI · ${profile.generatedBy}` : profile.localModel ? "设备端视觉模型" : "临时画像 · 建议重新分析"}</span>
             </div>
 
             <div className="evidence-heading">

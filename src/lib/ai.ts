@@ -30,6 +30,48 @@ function compactProfile(profile: AestheticProfile) {
   };
 }
 
+export async function generateAestheticProfileWithAI(input: {
+  images: SourceImage[];
+  calibration: string[];
+  onProgress?: (message: string, progress?: number) => void;
+}) {
+  const selected = input.images.slice(0, 12);
+  const form = new FormData();
+  form.set("context", JSON.stringify({
+    calibration: input.calibration,
+    references: selected.map((image, index) => ({
+      index: index + 1,
+      id: image.id,
+      name: image.name,
+    })),
+  }));
+
+  input.onProgress?.("正在压缩并安全上传参考图", 0.12);
+  for (let index = 0; index < selected.length; index += 1) {
+    const image = selected[index];
+    const compact = await resizeImageBlob(image.blob, 768, 0.68);
+    form.set(`reference_${index}`, compact, image.name);
+    input.onProgress?.(`正在准备第 ${index + 1} / ${selected.length} 张参考图`, 0.12 + ((index + 1) / selected.length) * 0.2);
+  }
+
+  input.onProgress?.("OpenAI 正在提炼审美共性与不真实样本", 0.38);
+  const response = await fetch("/api/ai/aesthetic", { method: "POST", body: form });
+  if (!response.ok) await apiFailure(response);
+  input.onProgress?.("正在整理五官、肤色、眉形与发型偏好", 0.9);
+  const profile = await response.json() as AestheticProfile;
+  const evidence = profile.evidence.map((item) => {
+    const source = selected.find((image) => image.id === item.sourceId)
+      ?? selected.find((image) => image.name === item.sourceName);
+    return {
+      ...item,
+      sourceId: source?.id ?? item.sourceId,
+      sourceName: source?.name ?? item.sourceName,
+    };
+  });
+  input.onProgress?.("个人审美画像已生成", 1);
+  return { ...profile, evidence };
+}
+
 export async function generatePersonalPlanWithAI(input: {
   profile: AestheticProfile;
   faceProfile: FaceProfile;
