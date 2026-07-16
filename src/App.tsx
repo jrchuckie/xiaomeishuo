@@ -20,14 +20,15 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import AiSimulationStudio from "./components/AiSimulationStudio";
 import CameraCapture from "./components/CameraCapture";
-import FaceSimulation from "./components/FaceSimulation";
 import FeatureDirectionPicker from "./components/FeatureDirectionPicker";
+import TreatmentHistoryEditor from "./components/TreatmentHistoryEditor";
+import { generatePersonalPlanWithAI } from "./lib/ai";
 import { analyzeAesthetic, STYLE_OPTIONS } from "./lib/aesthetic";
 import { importBoardThroughAuthorizedAdapter, parseXhsBoardLink } from "./lib/board";
 import { createFaceProfile, inspectFacePhoto } from "./lib/face";
 import { optimizeImageFile, releasePreview } from "./lib/image";
-import { generatePlan } from "./lib/planner";
 import { clearLocalSession, loadLocal, removeLocal, saveLocal } from "./lib/storage";
 import type {
   AestheticProfile,
@@ -63,7 +64,7 @@ const NAV_LABELS: Record<Screen, string> = {
   profile: "审美画像",
   face: "真实面部",
   preferences: "决策边界",
-  direction: "方向沙盘",
+  direction: "方向选择",
   plan: "完整方案",
 };
 const PRIORITIES = ["肤质", "眉形", "眼睛", "鼻子", "嘴唇", "轮廓", "面颈线条", "发型"];
@@ -90,6 +91,11 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   mustPreserve: ["原生肤色", "自然不对称"],
   excluded: [],
   medicalFlags: [],
+  personalGoal: "",
+  currentConcerns: "",
+  doctorProposal: "",
+  treatmentHistory: [],
+  cloudConsent: false,
 };
 
 const FEATURE_DIRECTIONS: { key: FeatureKey; label: string; options: string[]; note?: string }[] = [
@@ -172,6 +178,9 @@ function App() {
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [selections, setSelections] = useState<FeatureSelections>(DEFAULT_SELECTIONS);
   const [plan, setPlan] = useState<PersonalPlan>();
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [planError, setPlanError] = useState("");
+  const [preferenceError, setPreferenceError] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPrompt>();
   const [showInstall, setShowInstall] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -301,11 +310,11 @@ function App() {
     setAnalysisMessage(`正在优化并保存 0 / ${selectedFiles.length} 张图片`);
     setProfile(undefined);
     setPlan(undefined);
-    await Promise.all([removeLocal("profile"), removeLocal("plan")]);
+    await Promise.all([removeLocal("profile"), removeLocal("plan"), removeLocal("simulations")]);
     let next = [...references];
     try {
       for (let index = 0; index < selectedFiles.length; index += 1) {
-        const file = await optimizeImageFile(selectedFiles[index], 1440, 0.86);
+        const file = await optimizeImageFile(selectedFiles[index], 1024, 0.78);
         next = [...next, { id: crypto.randomUUID(), name: file.name, blob: file, preview: URL.createObjectURL(file) }];
         setReferences(next);
         await saveLocal<StoredImage[]>("references", next.map(({ preview: _preview, ...image }) => image));
@@ -329,6 +338,7 @@ function App() {
       saveLocal<StoredImage[]>("references", next.map(({ preview: _preview, ...image }) => image)),
       removeLocal("profile"),
       removeLocal("plan"),
+      removeLocal("simulations"),
     ]);
   };
 
@@ -376,6 +386,8 @@ function App() {
         saveLocal("profile", result),
         saveLocal("selections", nextSelections),
         saveLocal("progress", progressSnapshot(nextScreen, false)),
+        removeLocal("plan"),
+        removeLocal("simulations"),
       ]);
       if (navigate) setScreen("profile");
     } catch {
@@ -401,7 +413,7 @@ function App() {
     setCaptureAttested(false);
     setInspectingCaptures((current) => current.includes(kind) ? current : [...current, kind]);
     try {
-      const prepared = await optimizeImageFile(file, 1600, 0.9);
+      const prepared = await optimizeImageFile(file, 1280, 0.82);
       releasePreview(capturesRef.current.find((capture) => capture.kind === kind)?.preview);
       const preview = URL.createObjectURL(prepared);
       const base: FaceCapture = { kind, name: prepared.name, blob: prepared, preview };
@@ -415,6 +427,7 @@ function App() {
         saveLocal<StoredCapture[]>("faces", nextBase.map(({ preview: _preview, ...capture }) => capture)),
         saveLocal("faceProfile", draftProfile),
         removeLocal("plan"),
+        removeLocal("simulations"),
       ]);
 
       let inspected: Awaited<ReturnType<typeof inspectFacePhoto>>;
@@ -463,18 +476,48 @@ function App() {
   };
 
   const finishPreferences = async () => {
+    setPreferenceError("");
+    if (preferences.personalGoal.trim().length < 6) {
+      setPreferenceError("请先用一句话写清楚你想成为怎样的自己。");
+      return;
+    }
+    if (preferences.experience !== "第一次研究" && preferences.treatmentHistory.length === 0) {
+      setPreferenceError("你选择了有既往项目，请至少添加一条治疗记录，避免方案忽略已有材料和仍在起效的项目。");
+      return;
+    }
+    if (!preferences.cloudConsent) {
+      setPreferenceError("需要你明确同意后，才能把本次选择的照片发送给已配置的云端 AI 服务，生成个性化方案与效果图。");
+      return;
+    }
     await saveLocal("preferences", preferences);
     setPlan(undefined);
+    await Promise.all([removeLocal("plan"), removeLocal("simulations")]);
     goToScreen("direction");
   };
 
   const finishDirection = async () => {
+    if (!profile || !faceProfile || generatingPlan) return;
+    setPlanError("");
+    setGeneratingPlan(true);
     await saveLocal("selections", selections);
-    if (!profile || !faceProfile) return;
-    const nextPlan = generatePlan(profile, faceProfile, preferences, selections);
-    setPlan(nextPlan);
-    await saveLocal("plan", nextPlan);
-    goToScreen("plan");
+    await Promise.all([removeLocal("plan"), removeLocal("simulations")]);
+    try {
+      const nextPlan = await generatePersonalPlanWithAI({
+        profile,
+        faceProfile,
+        preferences,
+        selections,
+        captures,
+        references,
+      });
+      setPlan(nextPlan);
+      await saveLocal("plan", nextPlan);
+      goToScreen("plan");
+    } catch (error) {
+      setPlanError(error instanceof Error ? error.message : "个性化方案没有生成，请重试");
+    } finally {
+      setGeneratingPlan(false);
+    }
   };
 
   const resetAll = async () => {
@@ -492,6 +535,8 @@ function App() {
     setPreferences(DEFAULT_PREFERENCES);
     setSelections(DEFAULT_SELECTIONS);
     setPlan(undefined);
+    setPlanError("");
+    setPreferenceError("");
     setAnalysisMessage("");
     setScreen("source");
   };
@@ -529,7 +574,7 @@ function App() {
             <div className="screen-heading">
               <span className="step-label">STEP 1 · 理想样本</span>
               <h1>先让我看懂，<br />你真正喜欢什么</h1>
-              <p>导入小红书收藏、风格图或案例图。图片在你的设备上分析，默认不上传。</p>
+              <p>导入小红书收藏、风格图或案例图。审美初筛先在设备上完成；只有你在方案页明确同意后，本次选中的照片才会发送给已配置的云端 AI 服务。</p>
             </div>
 
             <div className="board-import panel">
@@ -755,7 +800,13 @@ function App() {
             <div className="screen-heading compact">
               <span className="step-label">STEP 4 · 决策边界</span>
               <h1>先说清楚，<br />什么你愿意、什么不愿意</h1>
-              <p>预算、行动时间、恢复期、风险偏好和必须保留的特征都会改变方案排序。</p>
+              <p>你的目标、既往材料与用量、预算、恢复期和必须保留的特征都会直接改变方案排序。</p>
+            </div>
+
+            <div className="survey-section goal-survey">
+              <span className="survey-number">00 · 我眼中的理想自己</span>
+              <label className="form-field"><span>你真正想获得什么变化？</span><textarea rows={3} value={preferences.personalGoal} onChange={(event) => setPreferences({ ...preferences, personalGoal: event.target.value })} placeholder="例：保留颧骨和粗粝感，让下半脸更有支撑、更硬朗，但不要网红尖下巴或过度填充感。" /></label>
+              <label className="form-field"><span>现在最困扰你的是什么？</span><textarea rows={3} value={preferences.currentConcerns} onChange={(event) => setPreferences({ ...preferences, currentConcerns: event.target.value })} placeholder="例：正面觉得颧骨抢眼，侧脸觉得下巴和下颌线衔接不够；我不确定问题到底来自哪里。" /></label>
             </div>
 
             <div className="survey-section">
@@ -779,6 +830,8 @@ function App() {
               <ChoiceGroup title="你过去做过什么" options={["第一次研究", "做过光电/皮肤项目", "做过针剂", "做过手术"]} value={preferences.experience} onChange={(experience) => setPreferences({ ...preferences, experience: experience as UserPreferences["experience"] })} />
               <ChoiceGroup title="你现在走到哪一步" options={["刚开始了解", "已在比较项目", "已拿到面诊方案", "准备近期行动"]} value={preferences.decisionStage} onChange={(decisionStage) => setPreferences({ ...preferences, decisionStage: decisionStage as UserPreferences["decisionStage"] })} />
               <ChoiceGroup title="为什么现在想改变" options={["自己主动想改善", "照片或镜头困扰", "他人评价影响", "医生建议后犹豫"]} value={preferences.motivation} onChange={(motivation) => setPreferences({ ...preferences, motivation: motivation as UserPreferences["motivation"] })} />
+              {preferences.experience !== "第一次研究" && <TreatmentHistoryEditor entries={preferences.treatmentHistory} onChange={(treatmentHistory) => setPreferences({ ...preferences, treatmentHistory })} />}
+              <label className="form-field doctor-proposal"><span>医生已经给过什么方案？</span><textarea rows={4} value={preferences.doctorProposal} onChange={(event) => setPreferences({ ...preferences, doctorProposal: event.target.value })} placeholder="例：医生建议十月再补下巴 2 mL，并在颧骨下方做 2 mL 支撑；我想比较这样做和更保守方案的差异。" /></label>
             </div>
 
             <div className="survey-section">
@@ -808,8 +861,13 @@ function App() {
               <MultiChoice title="明确不接受" options={EXCLUDED_OPTIONS} values={preferences.excluded} onChange={(excluded) => setPreferences({ ...preferences, excluded })} danger />
             </div>
 
-            <div className="safety-note"><ShieldCheck size={20} /><p><strong>建议不会越过你的边界</strong><br />不接受针剂时，方案不会用“效果最好”为理由偷偷加入针剂。</p></div>
-            <button className="primary-button" type="button" onClick={finishPreferences} disabled={!profile || !faceProfile || preferences.priorities.length === 0}>进入本人效果沙盘 <Sparkles size={19} /></button>
+            <div className="safety-note"><ShieldCheck size={20} /><p><strong>建议不会越过你的边界</strong><br />不接受针剂时，方案不会用“效果最好”为理由偷偷加入针剂；已有材料与剂量必须进入判断。</p></div>
+            <label className="cloud-consent">
+              <input type="checkbox" checked={preferences.cloudConsent} onChange={(event) => setPreferences({ ...preferences, cloudConsent: event.target.checked })} />
+              <span><strong>同意发送本次选择的照片给云端 AI 服务处理</strong><small>OpenAI 用于个人审美与整体方案分析，Seedream 仅用于效果模拟；不发送相册里的其他照片。AI 结果不构成诊断或处方。</small></span>
+            </label>
+            {preferenceError && <div className="ai-error"><CircleAlert size={17} /><span>{preferenceError}</span></div>}
+            <button className="primary-button" type="button" onClick={finishPreferences} disabled={!profile || !faceProfile || preferences.priorities.length === 0}>选择变化方向 <Sparkles size={19} /></button>
           </section>
         )}
 
@@ -817,31 +875,39 @@ function App() {
           <section className="screen direction-screen">
             <BackButton onClick={() => goToScreen("preferences")} />
             <div className="screen-heading compact">
-              <span className="step-label">STEP 5 · 方向沙盘</span>
-              <h1>别给我一个答案，<br />让我亲自比较</h1>
-              <p>先切换五官、眉形、肤色和发型方向，再生成对应的分阶段方案。</p>
+              <span className="step-label">STEP 5 · 方向选择</span>
+              <h1>先决定想改变什么，<br />也决定什么不改变</h1>
+              <p>这里选择审美方向，不再用粗糙滤镜冒充效果。完整方案生成后，再按正脸、侧脸和阶段调用真实 AI 编辑。</p>
             </div>
 
-            <FaceSimulation source={captures.find((capture) => capture.kind === "front")?.blob} landmarks={faceProfile?.landmarks} selections={selections} />
+            <div className="direction-baseline">
+              <div className="direction-baseline-images">
+                {captures.map((capture) => <figure key={capture.kind}><img src={capture.preview} alt="原始面部基线" /><figcaption>{capture.kind === "front" ? "原始正脸" : capture.kind === "left" ? "原始左侧脸" : "原始右侧脸"}</figcaption></figure>)}
+              </div>
+              <div className="direction-goal"><span>你的目标</span><strong>{preferences.personalGoal}</strong><p>原图会作为不可修改的基线；后续每张生成图都从对应角度重新生成。</p></div>
+            </div>
 
             <div className="direction-list">
               {FEATURE_DIRECTIONS.map((feature) => (
                 <FeatureDirectionPicker
                   key={feature.key}
                   feature={feature}
-                  sourceUrl={captures.find((capture) => capture.kind === "front")?.preview}
-                  landmarks={faceProfile?.landmarks}
                   selections={selections}
                   onSelect={(option) => {
                     setSelections({ ...selections, [feature.key]: option });
                     setPlan(undefined);
+                    setPlanError("");
+                    void Promise.all([removeLocal("plan"), removeLocal("simulations")]);
                   }}
                 />
               ))}
             </div>
 
-            <div className="medical-boundary"><CircleAlert size={20} /><p><strong>先看方向，不把模拟当承诺。</strong><br />局部预览用来比较“想不想要”，材料和剂量效果将在方案中以区间和不确定性呈现。</p></div>
-            <button className="primary-button" type="button" onClick={finishDirection}>按这个方向生成完整方案 <ArrowRight size={19} /></button>
+            <div className="medical-boundary"><CircleAlert size={20} /><p><strong>方案先分析，再生成图。</strong><br />系统会先结合治疗史判断哪些变化仍然合理，避免把已做过的区域再次机械叠加。</p></div>
+            {planError && <div className="ai-error"><CircleAlert size={17} /><span>{planError}</span></div>}
+            <button className="primary-button" type="button" onClick={() => void finishDirection()} disabled={generatingPlan}>
+              {generatingPlan ? <><LoaderCircle className="spin" size={19} /> 正在分析正侧脸与治疗史</> : <>生成完整个性化方案 <ArrowRight size={19} /></>}
+            </button>
           </section>
         )}
 
@@ -851,10 +917,84 @@ function App() {
             <div className="plan-title">
               <span>STEP 6 · MY IDEAL ME PLAN</span>
               <h1>{plan.headline}</h1>
-              <p>{plan.estimatedBudget}</p>
+              <p>{plan.aestheticGoal || preferences.personalGoal}</p>
+              <div className="plan-title-meta"><strong>{plan.estimatedBudget}</strong><span>{plan.generatedBy ? `由 ${plan.generatedBy} 生成` : "个人审美决策报告"}</span></div>
             </div>
 
-            <FaceSimulation source={captures.find((capture) => capture.kind === "front")?.blob} landmarks={faceProfile?.landmarks} selections={selections} />
+            <section className="plan-executive">
+              <span>先说结论</span>
+              <h2>{plan.executiveSummary || plan.headline}</h2>
+              <div className="plan-executive-grid">
+                <div><b>你的目标</b><p>{plan.aestheticGoal || preferences.personalGoal}</p></div>
+                <div><b>当前判断</b><p>{plan.currentState || "当前判断来自本次正侧脸、参考样本与用户填写信息，仍需面诊验证。"}</p></div>
+              </div>
+            </section>
+
+            {plan.aestheticSynthesis && (
+              <section className="aesthetic-synthesis">
+                <div className="report-section-heading"><span>01</span><div><b>你的个人审美，不是平台模板</b><p>先解释收藏样本反复指向什么，再决定哪些特征适合映射到本人。</p></div></div>
+                <p className="aesthetic-thesis">{plan.aestheticSynthesis.summary}</p>
+                <div className="aesthetic-keywords">{plan.aestheticSynthesis.styleKeywords.map((keyword) => <span key={keyword}>{keyword}</span>)}</div>
+                <div className="aesthetic-signal-list">
+                  {plan.aestheticSynthesis.featureSignals.map((signal) => (
+                    <article key={`${signal.area}-${signal.preference}`}>
+                      <div><span>{signal.area}</span><b className={`confidence ${signal.confidence}`}>{signal.confidence}置信</b></div>
+                      <h3>{signal.preference}</h3>
+                      <p><strong>样本依据</strong>{signal.evidence}</p>
+                      <small><strong>映射本人时保留</strong>{signal.preserve}</small>
+                    </article>
+                  ))}
+                </div>
+                {plan.aestheticSynthesis.referenceNotes.length > 0 && (
+                  <div className="reference-audit">
+                    <span>样本采用判断</span>
+                    <div>
+                      {plan.aestheticSynthesis.referenceNotes.map((note) => {
+                        const source = references[note.referenceIndex - 1];
+                        return <article key={`${note.referenceIndex}-${note.signal}`} className={`decision-${note.decision}`}>
+                          {source && <img src={source.preview} alt={`审美参考图 ${note.referenceIndex}`} />}
+                          <div><b>参考图 {note.referenceIndex} · {note.decision}</b><strong>{note.signal}</strong><p>{note.reason}</p></div>
+                        </article>;
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className="aesthetic-antigoals"><span>这不是你要的</span>{plan.aestheticSynthesis.antiGoals.map((item) => <b key={item}>{item}</b>)}</div>
+              </section>
+            )}
+
+            <AiSimulationStudio captures={captures} plan={plan} selections={selections} />
+
+            {plan.historyImpact && plan.historyImpact.length > 0 && (
+              <section className="history-impact">
+                <div className="report-section-heading"><span>02</span><div><b>既往项目如何改变本次判断</b><p>不是重新从零推荐，而是把已经做过的量、位置、时间与反馈带入后续排序。</p></div></div>
+                <div className="history-impact-list">{plan.historyImpact.map((item, index) => <div key={`${index}-${item}`}><span>{String(index + 1).padStart(2, "0")}</span><p>{item}</p></div>)}</div>
+              </section>
+            )}
+
+            {plan.observations && plan.observations.length > 0 && (
+              <section className="plan-observations">
+                <div className="report-section-heading"><span>03</span><div><b>从照片能看见什么</b><p>观察、含义与限制分开写，避免把照片印象包装成医学结论。</p></div></div>
+                <div className="observation-list">
+                  {plan.observations.map((observation) => (
+                    <article key={`${observation.area}-${observation.observation}`}>
+                      <div><span>{observation.area}</span><b className={`confidence ${observation.confidence}`}>{observation.confidence}置信</b></div>
+                      <h3>{observation.observation}</h3>
+                      <p><strong>依据</strong>{observation.evidence}</p>
+                      <p><strong>对决策的含义</strong>{observation.implication}</p>
+                      <small><CircleAlert size={14} />{observation.limit}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {plan.decisionLogic && plan.decisionLogic.length > 0 && (
+              <section className="decision-logic">
+                <div className="report-section-heading"><span>04</span><div><b>为什么这样排序</b><p>先看与目标的关系，再看既往项目、风险、预算和可逆性。</p></div></div>
+                <div>{plan.decisionLogic.map((item, index) => <p key={`${index}-${item}`}><b>{String(index + 1).padStart(2, "0")}</b><span>{item}</span></p>)}</div>
+              </section>
+            )}
 
             <div className="preserve-grid">
               <div><span>必须保留</span>{plan.preserve.map((item) => <strong key={item}>{item}</strong>)}</div>
@@ -862,16 +1002,21 @@ function App() {
             </div>
 
             <div className="phase-list">
+              <div className="report-section-heading"><span>05</span><div><b>分阶段行动方案</b><p>每一步都说明进入候选的理由、代价，以及什么情况下先不做。</p></div></div>
               {plan.phases.map((phase) => (
                 <section className="phase" key={phase.label}>
                   <div className="phase-heading"><span>{phase.label}</span><h2>{phase.title}</h2></div>
                   {phase.items.map((planItem) => (
-                    <article className="plan-item" key={planItem.title}>
-                      <div className="plan-item-top"><h3>{planItem.title}</h3><span className={`risk ${planItem.risk === "低" ? "low" : "review"}`}>{planItem.risk}</span></div>
+                    <article className={`plan-item priority-${planItem.priority || "可选"}`} key={planItem.title}>
+                      <div className="plan-item-top"><div><span className="priority-label">{planItem.priority || "可选"}</span><h3>{planItem.title}</h3></div><div className="plan-status"><span className={`confidence ${planItem.confidence || "中"}`}>{planItem.confidence || "中"}置信</span><span className={`risk ${planItem.risk === "低" ? "low" : "review"}`}>{planItem.risk}</span></div></div>
                       <span className="plan-area">{planItem.area}</span>
                       <p>{planItem.reason}</p>
                       <div className="action-line"><ArrowRight size={16} /><strong>{planItem.action}</strong></div>
                       <div className="meta-row"><span>{planItem.timing}</span><span>{planItem.budget}</span></div>
+                      {planItem.historyAdjustment && <div className="history-adjustment"><RefreshCcw size={15} /><p><strong>既往项目影响</strong>{planItem.historyAdjustment}</p></div>}
+                      {planItem.evidence && planItem.evidence.length > 0 && <div className="plan-evidence"><span>进入候选的依据</span>{planItem.evidence.map((item) => <p key={item}><Check size={13} />{item}</p>)}</div>}
+                      {planItem.tradeoffs && planItem.tradeoffs.length > 0 && <div className="plan-tradeoffs"><span>需要接受的代价</span>{planItem.tradeoffs.map((item) => <p key={item}><CircleAlert size={13} />{item}</p>)}</div>}
+                      {(planItem.notNow || planItem.reassessAfter) && <div className="plan-reassess"><p><strong>为什么不一定现在做</strong>{planItem.notNow || "需先完成前一阶段再判断。"}</p><p><strong>何时复评</strong>{planItem.reassessAfter || "由面诊与前一阶段反馈决定。"}</p></div>}
                       {planItem.materials && planItem.materials.length > 0 && (
                         <div className="material-list">
                           {planItem.materials.map((materialOption) => (
@@ -882,8 +1027,10 @@ function App() {
                               <div className="dose-options">
                                 {materialOption.amountOptions.map((amount) => <span key={amount}>{amount}</span>)}
                               </div>
-                              <p><strong>为什么进入候选</strong>{materialOption.fit}</p>
-                              <small>{materialOption.caveat}</small>
+                              <p><strong>为什么进入候选</strong>{materialOption.whyFit || materialOption.fit}</p>
+                              <p><strong>为什么也可能不选</strong>{materialOption.whyNot || materialOption.caveat}</p>
+                              <p><strong>可逆性与退出</strong>{materialOption.reversibility || "需根据具体产品与操作方式向医生核实。"}</p>
+                              <small><CircleAlert size={13} />{materialOption.caveat}</small>
                             </article>
                           ))}
                         </div>
@@ -894,8 +1041,15 @@ function App() {
               ))}
             </div>
 
+            {plan.unresolvedQuestions && plan.unresolvedQuestions.length > 0 && (
+              <section className="unresolved-list">
+                <span>生成方案时仍缺少的信息</span>
+                {plan.unresolvedQuestions.map((question, index) => <div key={question}><b>{String(index + 1).padStart(2, "0")}</b><p>{question}</p></div>)}
+              </section>
+            )}
+
             <div className="consultation-list">
-              <span>带去面诊的四个问题</span>
+              <span>带去面诊的问题清单</span>
               {plan.consultationQuestions.map((question, index) => <div key={question}><b>0{index + 1}</b><p>{question}</p></div>)}
             </div>
 

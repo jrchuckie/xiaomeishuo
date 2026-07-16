@@ -5,9 +5,10 @@ const KEYS = {
   faces: "xiaomeishuo.faces.v1",
   profile: "xiaomeishuo.profile.v3",
   faceProfile: "xiaomeishuo.face-profile.v2",
-  preferences: "xiaomeishuo.preferences.v3",
+  preferences: "xiaomeishuo.preferences.v4",
   selections: "xiaomeishuo.selections.v2",
-  plan: "xiaomeishuo.plan.v3",
+  plan: "xiaomeishuo.plan.v4",
+  simulations: "xiaomeishuo.simulations.v1",
   progress: "xiaomeishuo.progress.v1",
 } as const;
 
@@ -17,8 +18,10 @@ const LEGACY_KEYS = [
   "xiaomeishuo.face-profile.v1",
   "xiaomeishuo.preferences.v1",
   "xiaomeishuo.preferences.v2",
+  "xiaomeishuo.preferences.v3",
   "xiaomeishuo.plan.v1",
   "xiaomeishuo.plan.v2",
+  "xiaomeishuo.plan.v3",
 ];
 
 export async function saveLocal<T>(key: keyof typeof KEYS, value: T) {

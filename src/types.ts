@@ -88,6 +88,23 @@ export type UserPreferences = {
   mustPreserve: string[];
   excluded: string[];
   medicalFlags: string[];
+  personalGoal: string;
+  currentConcerns: string;
+  doctorProposal: string;
+  treatmentHistory: TreatmentHistoryEntry[];
+  cloudConsent: boolean;
+};
+
+export type TreatmentHistoryEntry = {
+  id: string;
+  category: "透明质酸/填充" | "肉毒毒素" | "再生材料" | "光电/皮肤" | "手术" | "其他";
+  product: string;
+  amount: string;
+  areas: string;
+  date: string;
+  outcome: "满意" | "一般" | "不满意" | "仍在观察";
+  adverseEvents: string;
+  notes: string;
 };
 
 export type FeatureKey = "eyes" | "nose" | "contour" | "brows" | "lips" | "skin" | "hair";
@@ -101,6 +118,9 @@ export type MaterialOption = {
   fit: string;
   evidence: "大陆已核验" | "需核验具体型号/适应证" | "非医疗服务";
   caveat: string;
+  whyFit?: string;
+  whyNot?: string;
+  reversibility?: string;
 };
 
 export type PlanItem = {
@@ -112,13 +132,78 @@ export type PlanItem = {
   risk: "低" | "中" | "需医生评估";
   area: string;
   materials?: MaterialOption[];
+  priority?: "现在" | "观察后" | "可选" | "不建议";
+  confidence?: "高" | "中" | "低";
+  evidence?: string[];
+  tradeoffs?: string[];
+  notNow?: string;
+  reassessAfter?: string;
+  historyAdjustment?: string;
+};
+
+export type PlanObservation = {
+  area: string;
+  observation: string;
+  evidence: string;
+  implication: string;
+  confidence: "高" | "中" | "低";
+  limit: string;
+};
+
+export type AestheticSynthesis = {
+  summary: string;
+  styleKeywords: string[];
+  featureSignals: Array<{
+    area: string;
+    preference: string;
+    evidence: string;
+    confidence: "高" | "中" | "低";
+    preserve: string;
+  }>;
+  antiGoals: string[];
+  referenceNotes: Array<{
+    referenceIndex: number;
+    decision: "采纳" | "谨慎采纳" | "排除";
+    signal: string;
+    reason: string;
+  }>;
+};
+
+export type VisualScenario = {
+  id: "stage-1" | "stage-2" | "stage-3";
+  label: string;
+  title: string;
+  summary: string;
+  changes: string[];
+  unchanged: string[];
 };
 
 export type PersonalPlan = {
   headline: string;
+  executiveSummary?: string;
+  aestheticSynthesis?: AestheticSynthesis;
+  aestheticGoal?: string;
+  currentState?: string;
+  historyImpact?: string[];
+  observations?: PlanObservation[];
+  unresolvedQuestions?: string[];
+  decisionLogic?: string[];
   preserve: string[];
   avoid: string[];
   estimatedBudget: string;
   consultationQuestions: string[];
   phases: { label: string; title: string; items: PlanItem[] }[];
+  visualScenarios?: VisualScenario[];
+  generatedBy?: string;
+  generatedAt?: string;
+};
+
+export type SimulationResult = {
+  id: string;
+  stageId: VisualScenario["id"];
+  angle: CaptureKind;
+  image: Blob;
+  generatedAt: string;
+  model: string;
+  assumptions: string[];
 };
