@@ -29,6 +29,12 @@ npm run preview -- --port 4178
 
 iPhone 用 Safari 打开 HTTPS 地址后选择“分享”→“添加到主屏幕”；Android 用 Chrome 打开后选择“安装应用”。安装后以独立 App 窗口运行，仍然是同一套 Web 代码，适合当前验证阶段。
 
+## GitHub Pages 发布
+
+推送到 `main` 后，GitHub Actions 会自动构建并发布 `dist/`。首次发布前，在仓库的 **Settings → Pages → Build and deployment → Source** 中选择 **GitHub Actions**。
+
+站点地址：<https://jrchuckie.github.io/xiaomeishuo/>
+
 ## 收藏夹导入
 
 公开分享链接可以被识别，但匿名网页不稳定提供收藏内容。原型默认让用户从小红书分享页批量选择收藏图；内部环境可配置 `VITE_XHS_BOARD_ENDPOINT` 接入用户授权后的收藏夹接口。
