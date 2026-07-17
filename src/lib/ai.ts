@@ -26,6 +26,29 @@ async function postFormJson<T>(endpoint: string, form: FormData) {
   return body as T;
 }
 
+async function postJson<T>(endpoint: string, payload: unknown) {
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error("网络连接短暂中断，正在保留当前方案任务。");
+  }
+
+  const body = await response.json().catch(() => null) as (T & { error?: string }) | null;
+  if (!response.ok) throw new Error(body?.error || `AI 服务返回 ${response.status}`);
+  if (!body) throw new Error("方案状态没有完整送达。");
+  if (body.error) throw new Error(body.error);
+  return body as T;
+}
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
 function compactProfile(profile: AestheticProfile) {
   return {
     styles: profile.styles,
@@ -87,6 +110,7 @@ export async function generatePersonalPlanWithAI(input: {
   selections: FeatureSelections;
   captures: FaceCapture[];
   references: SourceImage[];
+  onProgress?: (message: string) => void;
 }) {
   const form = new FormData();
   form.set("context", JSON.stringify({
@@ -115,7 +139,44 @@ export async function generatePersonalPlanWithAI(input: {
     form.set(`reference_${index}`, blob, reference.name);
   });
 
-  return await postFormJson<PersonalPlan>("/api/ai/plan", form);
+  input.onProgress?.("正在安全提交完整方案任务");
+  const started = await postFormJson<
+    | { status: "queued" | "in_progress"; jobId: string; token: string }
+    | { status: "completed"; plan: PersonalPlan }
+  >("/api/ai/plan", form);
+  if (started.status === "completed") return started.plan;
+
+  input.onProgress?.("任务已提交，正在综合审美、面部条件与治疗史");
+  let consecutiveFailures = 0;
+  const startedAt = Date.now();
+  for (let attempt = 0; attempt < 180; attempt += 1) {
+    await delay(3000);
+    try {
+      const status = await postJson<
+        | { status: "queued" | "in_progress" }
+        | { status: "completed"; plan: PersonalPlan }
+      >("/api/ai/plan/status", { jobId: started.jobId, token: started.token });
+      consecutiveFailures = 0;
+      if (status.status === "completed") {
+        input.onProgress?.("方案已完成，正在整理页面");
+        return status.plan;
+      }
+
+      const elapsedSeconds = Math.round((Date.now() - startedAt) / 1000);
+      input.onProgress?.(
+        elapsedSeconds < 30
+          ? "正在核对参考样本与个人审美"
+          : elapsedSeconds < 75
+            ? "正在形成分阶段方案与材料比较"
+            : `正在完成详细报告，已分析约 ${elapsedSeconds} 秒`,
+      );
+    } catch (error) {
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= 5) throw error;
+      input.onProgress?.("网络有短暂波动，方案仍在后台生成，正在重新连接");
+    }
+  }
+  throw new Error("完整方案生成时间超过 9 分钟，请稍后重新进入本页重试。");
 }
 
 async function dataUrlToBlob(dataUrl: string) {

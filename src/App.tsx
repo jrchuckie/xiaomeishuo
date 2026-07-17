@@ -179,6 +179,7 @@ function App() {
   const [selections, setSelections] = useState<FeatureSelections>(DEFAULT_SELECTIONS);
   const [plan, setPlan] = useState<PersonalPlan>();
   const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [planMessage, setPlanMessage] = useState("");
   const [planError, setPlanError] = useState("");
   const [preferenceError, setPreferenceError] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPrompt>();
@@ -515,6 +516,7 @@ function App() {
   const finishDirection = async () => {
     if (!profile || !faceProfile || generatingPlan) return;
     setPlanError("");
+    setPlanMessage("正在准备照片与审美信息");
     setGeneratingPlan(true);
     await saveLocal("selections", selections);
     await Promise.all([removeLocal("plan"), removeLocal("simulations")]);
@@ -526,6 +528,7 @@ function App() {
         selections,
         captures,
         references,
+        onProgress: setPlanMessage,
       });
       setPlan(nextPlan);
       await saveLocal("plan", nextPlan);
@@ -534,6 +537,7 @@ function App() {
       setPlanError(error instanceof Error ? error.message : "个性化方案没有生成，请重试");
     } finally {
       setGeneratingPlan(false);
+      setPlanMessage("");
     }
   };
 
@@ -552,6 +556,7 @@ function App() {
     setPreferences(DEFAULT_PREFERENCES);
     setSelections(DEFAULT_SELECTIONS);
     setPlan(undefined);
+    setPlanMessage("");
     setPlanError("");
     setPreferenceError("");
     setAnalysisMessage("");
@@ -890,7 +895,7 @@ function App() {
             <div className="safety-note"><ShieldCheck size={20} /><p><strong>建议不会越过你的边界</strong><br />不接受针剂时，方案不会用“效果最好”为理由偷偷加入针剂；已有材料与剂量必须进入判断。</p></div>
             <label className="cloud-consent">
               <input type="checkbox" checked={preferences.cloudConsent} onChange={(event) => setPreferences({ ...preferences, cloudConsent: event.target.checked })} />
-              <span><strong>同意发送本次选择的照片给云端 AI 服务处理</strong><small>OpenAI 用于个人审美与整体方案分析，Seedream 仅用于效果模拟；不发送相册里的其他照片。AI 结果不构成诊断或处方。</small></span>
+              <span><strong>同意发送本次选择的照片给云端 AI 服务处理</strong><small>OpenAI 用于个人审美与整体方案分析，完整方案会作为后台任务生成并自动取回；Seedream 仅用于效果模拟。不发送相册里的其他照片，AI 结果不构成诊断或处方。</small></span>
             </label>
             {preferenceError && <div className="ai-error"><CircleAlert size={17} /><span>{preferenceError}</span></div>}
             <button className="primary-button" type="button" onClick={finishPreferences} disabled={!profile || !faceProfile || preferences.priorities.length === 0}>选择变化方向 <Sparkles size={19} /></button>
@@ -930,9 +935,10 @@ function App() {
             </div>
 
             <div className="medical-boundary"><CircleAlert size={20} /><p><strong>方案先分析，再生成图。</strong><br />系统会先结合治疗史判断哪些变化仍然合理，避免把已做过的区域再次机械叠加。</p></div>
+            {generatingPlan && <div className="analysis-progress plan-progress"><div /><span>{planMessage || "正在生成完整方案"}</span></div>}
             {planError && <div className="ai-error"><CircleAlert size={17} /><span>{planError}</span></div>}
             <button className="primary-button" type="button" onClick={() => void finishDirection()} disabled={generatingPlan}>
-              {generatingPlan ? <><LoaderCircle className="spin" size={19} /> 正在生成完整方案，请保持页面开启</> : <>生成完整个性化方案 <ArrowRight size={19} /></>}
+              {generatingPlan ? <><LoaderCircle className="spin" size={19} /> 正在生成完整方案</> : <>生成完整个性化方案 <ArrowRight size={19} /></>}
             </button>
           </section>
         )}

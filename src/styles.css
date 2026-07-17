@@ -197,6 +197,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .analysis-progress { position: relative; height: 58px; margin-top: 22px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
 .analysis-progress > div { height: 4px; background: var(--red); transition: width 220ms ease; }
 .analysis-progress span { position: absolute; left: 14px; right: 14px; top: 19px; color: var(--muted); font-size: 12px; }
+.plan-progress > div { width: 42%; animation: plan-progress 1.8s ease-in-out infinite; }
+@keyframes plan-progress { from { transform: translateX(-105%); } to { transform: translateX(245%); } }
 .inline-message { margin: 15px 0 0; color: #a95c00; font-size: 12px; }
 
 .back-button { display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0; border: 0; background: transparent; font-size: 14px; font-weight: 720; }

@@ -1,5 +1,6 @@
-import { apiError, readJsonField, streamJsonTask } from "../_lib/common";
-import { blobToOpenAIImage, createStructuredPlan, OPENAI_PLAN_MODEL, type OpenAIContentPart } from "../_lib/openai";
+import { apiError, readJsonField } from "../_lib/common";
+import { blobToOpenAIImage, startBackgroundStructuredPlan, type OpenAIContentPart } from "../_lib/openai";
+import { finalizePersonalPlan, signPlanJob } from "../_lib/plan-job";
 
 export const runtime = "nodejs";
 
@@ -245,20 +246,20 @@ export async function POST(request: Request) {
       input.push(await blobToOpenAIImage(value, "low"));
     }
 
-    return streamJsonTask(async () => {
-      const plan = await createStructuredPlan(
-        SYSTEM_INSTRUCTION,
-        input,
-        PLAN_SCHEMA as unknown as Record<string, unknown>,
-        { maxOutputTokens: 14000, reasoningEffort: "low", verbosity: "low" },
-      );
-      if (!Array.isArray(plan.phases) || plan.phases.length < 3) throw new Error("INCOMPLETE_PLAN_PHASES");
-      if (!Array.isArray(plan.visualScenarios) || plan.visualScenarios.length !== 3) throw new Error("INCOMPLETE_VISUAL_SCENARIOS");
-      if (typeof plan.headline !== "string" || !plan.headline.trim()) throw new Error("INCOMPLETE_PLAN_HEADLINE");
-      plan.generatedBy = OPENAI_PLAN_MODEL;
-      plan.generatedAt = new Date().toISOString();
-      return plan;
-    });
+    const job = await startBackgroundStructuredPlan(
+      SYSTEM_INSTRUCTION,
+      input,
+      PLAN_SCHEMA as unknown as Record<string, unknown>,
+      { maxOutputTokens: 14000, reasoningEffort: "low", verbosity: "low" },
+    );
+    if (job.status === "completed") {
+      return Response.json({ status: "completed", plan: finalizePersonalPlan(job.result) });
+    }
+    return Response.json({
+      status: job.status,
+      jobId: job.id,
+      token: signPlanJob(job.id),
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return apiError(error);
   }
