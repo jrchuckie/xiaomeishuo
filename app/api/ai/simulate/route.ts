@@ -1,4 +1,4 @@
-import { apiError, readJsonField, streamJsonTask } from "../_lib/common";
+import { apiError, readJsonField, streamImageTask, streamJsonTask } from "../_lib/common";
 import { generateOpenAIImageEdit } from "../_lib/gpt-image";
 import { generateSeedreamImage } from "../_lib/seedream";
 
@@ -206,7 +206,7 @@ export async function POST(request: Request) {
     const engine = context.engine === "seedream" ? "seedream" : "gpt-image";
     const geometry = await imageGeometry(target);
     const prompt = simulationPrompt(context, identityReferences.length, geometry.description);
-    return streamJsonTask(async () => {
+    const task = async () => {
       const result = engine === "seedream"
         ? await generateSeedreamImage(prompt, [target, ...identityReferences])
         : await generateOpenAIImageEdit(prompt, [target, ...identityReferences], geometry.outputSize);
@@ -217,7 +217,10 @@ export async function POST(request: Request) {
         generatedAt: new Date().toISOString(),
         assumptions: stringList(context.changes, 6),
       };
-    });
+    };
+    return request.headers.get("X-XMS-Image-Protocol") === "binary-v1"
+      ? streamImageTask(task)
+      : streamJsonTask(task);
   } catch (error) {
     return apiError(error);
   }

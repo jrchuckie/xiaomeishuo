@@ -11,6 +11,26 @@ import type {
 } from "../types";
 import { resizeImageBlob } from "./image";
 
+const IMAGE_FRAME_MARKER = new TextEncoder().encode("XMS_IMAGE_V1\n");
+const ERROR_FRAME_MARKER = new TextEncoder().encode("XMS_ERROR_V1\n");
+
+function findBytes(buffer: Uint8Array, needle: Uint8Array, start = 0) {
+  outer: for (let index = start; index <= buffer.byteLength - needle.byteLength; index += 1) {
+    for (let offset = 0; offset < needle.byteLength; offset += 1) {
+      if (buffer[index + offset] !== needle[offset]) continue outer;
+    }
+    return index;
+  }
+  return -1;
+}
+
+function findLineEnd(buffer: Uint8Array, start: number) {
+  for (let index = start; index < buffer.byteLength; index += 1) {
+    if (buffer[index] === 10) return index;
+  }
+  return -1;
+}
+
 async function postFormJson<T>(endpoint: string, form: FormData) {
   let response: Response;
   try {
@@ -24,6 +44,89 @@ async function postFormJson<T>(endpoint: string, form: FormData) {
   if (!body) throw new Error("AI 返回内容没有完整送达，请重试。");
   if (body.error) throw new Error(body.error);
   return body as T;
+}
+
+async function postFormImage<T extends Record<string, unknown>>(endpoint: string, form: FormData) {
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "X-XMS-Image-Protocol": "binary-v1" },
+      body: form,
+    });
+  } catch {
+    throw new Error("网络连接中断。照片和当前选择已保存，请保持页面开启后重试。");
+  }
+
+  const payload = new Uint8Array(await response.arrayBuffer());
+  const decoder = new TextDecoder();
+  if (!response.ok) {
+    const text = decoder.decode(payload).trim();
+    let message = `AI 服务返回 ${response.status}`;
+    try {
+      const body = JSON.parse(text) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      // Preserve the status-based fallback when an intermediary returns HTML.
+    }
+    throw new Error(message);
+  }
+
+  const imageMarker = findBytes(payload, IMAGE_FRAME_MARKER);
+  const errorMarker = findBytes(payload, ERROR_FRAME_MARKER);
+  if (errorMarker >= 0 && (imageMarker < 0 || errorMarker < imageMarker)) {
+    const text = decoder.decode(payload.slice(errorMarker + ERROR_FRAME_MARKER.byteLength)).trim();
+    let body: { error?: string } | null = null;
+    try {
+      body = JSON.parse(text) as { error?: string };
+    } catch {
+      // The frame itself can also be interrupted; keep the user-facing fallback stable.
+    }
+    throw new Error(body?.error || "AI 生成没有完成，请稍后重试");
+  }
+
+  if (imageMarker >= 0) {
+    const lengthStart = imageMarker + IMAGE_FRAME_MARKER.byteLength;
+    const lengthEnd = findLineEnd(payload, lengthStart);
+    if (lengthEnd < 0) throw new Error("效果图传输中断。照片和方案已保留，请重试生成。");
+    const headerLength = Number(decoder.decode(payload.slice(lengthStart, lengthEnd)));
+    const headerStart = lengthEnd + 1;
+    const headerEnd = headerStart + headerLength;
+    if (!Number.isSafeInteger(headerLength) || headerLength <= 0 || headerEnd > payload.byteLength) {
+      throw new Error("效果图传输中断。照片和方案已保留，请重试生成。");
+    }
+    const metadata = JSON.parse(decoder.decode(payload.slice(headerStart, headerEnd))) as T & {
+      mimeType?: string;
+      byteLength?: number;
+      error?: string;
+    };
+    if (metadata.error) throw new Error(metadata.error);
+    const expectedBytes = Number(metadata.byteLength);
+    const imageEnd = headerEnd + expectedBytes;
+    if (!Number.isSafeInteger(expectedBytes) || expectedBytes <= 0 || imageEnd > payload.byteLength) {
+      throw new Error("效果图传输中断。照片和方案已保留，请重试生成。");
+    }
+    const imageBytes = payload.slice(headerEnd, imageEnd);
+    return {
+      ...metadata,
+      image: new Blob([imageBytes], { type: metadata.mimeType || "image/jpeg" }),
+    } as T & { image: Blob };
+  }
+
+  // During a rolling deployment, a new client can briefly reach the legacy JSON route.
+  const legacyText = decoder.decode(payload).trim();
+  let legacy: (T & { image?: string; error?: string }) | null = null;
+  try {
+    legacy = JSON.parse(legacyText) as T & { image?: string; error?: string };
+  } catch {
+    throw new Error("效果图传输中断。照片和方案已保留，请重试生成。");
+  }
+  if (legacy.error) throw new Error(legacy.error);
+  if (!legacy.image) throw new Error("效果图传输中断。照片和方案已保留，请重试生成。");
+  return {
+    ...legacy,
+    image: await dataUrlToBlob(legacy.image),
+  } as T & { image: Blob };
 }
 
 async function postJson<T>(endpoint: string, payload: unknown) {
@@ -234,8 +337,7 @@ export async function generateSimulationWithAI(input: {
     form.set(`identity_${index}`, blob, reference.name);
   });
 
-  const result = await postFormJson<{
-    image: string;
+  const result = await postFormImage<{
     model: string;
     generatedAt: string;
     assumptions: string[];
@@ -245,7 +347,7 @@ export async function generateSimulationWithAI(input: {
     stageId: input.scenario.id,
     angle: input.target.kind,
     engine: input.engine,
-    image: await dataUrlToBlob(result.image),
+    image: result.image,
     generatedAt: result.generatedAt,
     model: result.model,
     assumptions: result.assumptions,

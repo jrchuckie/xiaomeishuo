@@ -68,6 +68,90 @@ export function streamJsonTask(task: () => Promise<unknown>) {
   });
 }
 
+const IMAGE_FRAME_MARKER = "XMS_IMAGE_V1\n";
+const ERROR_FRAME_MARKER = "XMS_ERROR_V1\n";
+const STREAM_CHUNK_SIZE = 64 * 1024;
+
+function decodeDataImage(image: string) {
+  const match = image.match(/^data:([^;,]+);base64,(.+)$/s);
+  if (!match) throw new Error("INVALID_GENERATED_IMAGE");
+  return {
+    mimeType: match[1],
+    bytes: new Uint8Array(Buffer.from(match[2], "base64")),
+  };
+}
+
+/**
+ * Keeps long image generations connected while sending the final image as raw
+ * bytes. This avoids wrapping a large base64 image in JSON, which is fragile on
+ * mobile networks and adds roughly 33% transport overhead.
+ */
+export function streamImageTask<T extends { image: string }>(task: () => Promise<T>) {
+  const encoder = new TextEncoder();
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let cancelled = false;
+
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const stopHeartbeat = () => {
+        if (heartbeat) clearInterval(heartbeat);
+        heartbeat = undefined;
+      };
+      const pushBytes = (bytes: Uint8Array) => {
+        if (cancelled) return;
+        for (let offset = 0; offset < bytes.byteLength; offset += STREAM_CHUNK_SIZE) {
+          controller.enqueue(bytes.slice(offset, offset + STREAM_CHUNK_SIZE));
+        }
+      };
+      const pushText = (value: string) => pushBytes(encoder.encode(value));
+
+      // Flush response headers immediately so long AI calls stay connected on mobile.
+      pushText(" ".repeat(2048));
+      heartbeat = setInterval(() => pushText(" ".repeat(2048)), 4000);
+
+      void task()
+        .then((result) => {
+          stopHeartbeat();
+          const { image, ...metadata } = result;
+          const decoded = decodeDataImage(image);
+          const header = encoder.encode(JSON.stringify({
+            ...metadata,
+            mimeType: decoded.mimeType,
+            byteLength: decoded.bytes.byteLength,
+          }));
+          pushText(IMAGE_FRAME_MARKER);
+          pushText(`${header.byteLength}\n`);
+          pushBytes(header);
+          pushBytes(decoded.bytes);
+        })
+        .catch(async (error) => {
+          stopHeartbeat();
+          const response = apiError(error);
+          const payload = await response.text();
+          pushText(ERROR_FRAME_MARKER);
+          pushText(payload);
+        })
+        .finally(() => {
+          stopHeartbeat();
+          if (!cancelled) controller.close();
+        });
+    },
+    cancel() {
+      cancelled = true;
+      if (heartbeat) clearInterval(heartbeat);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Cache-Control": "no-store, no-transform",
+      "Content-Type": "application/octet-stream",
+      "X-Accel-Buffering": "no",
+      "X-XMS-Image-Protocol": "binary-v1",
+    },
+  });
+}
+
 export function readJsonField(form: FormData, key: string) {
   const value = form.get(key);
   if (typeof value !== "string") throw new Error(`MISSING_${key.toUpperCase()}`);
