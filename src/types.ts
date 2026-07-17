@@ -180,6 +180,8 @@ export type VisualScenario = {
   unchanged: string[];
 };
 
+export type SimulationEngine = "gpt-image" | "seedream";
+
 export type PersonalPlan = {
   headline: string;
   executiveSummary?: string;
@@ -204,6 +206,7 @@ export type SimulationResult = {
   id: string;
   stageId: VisualScenario["id"];
   angle: CaptureKind;
+  engine?: SimulationEngine;
   image: Blob;
   generatedAt: string;
   model: string;

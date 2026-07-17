@@ -25,8 +25,8 @@ const PLAN_SCHEMA = {
     "visualScenarios",
   ],
   properties: {
-    headline: { type: "string" },
-    executiveSummary: { type: "string" },
+    headline: { type: "string", maxLength: 48 },
+    executiveSummary: { type: "string", maxLength: 140 },
     aestheticSynthesis: {
       type: "object",
       additionalProperties: false,
@@ -206,6 +206,7 @@ const SYSTEM_INSTRUCTION = `你是“小美说”的个人审美决策分析引�
 7. 只可使用输入中提供的候选项目库；库外品牌写“具体型号需核验”，不得编造大陆获批状态。产品获批不等于适合本人，治疗当天仍需核验说明书、适应证和注册信息。
 8. 三个视觉阶段是给 Seedream 执行的审美编辑说明，不是治疗结果预测。changes 必须是照片中可见的具体变化，unchanged 必须锁定身份、未选区域、肤色、皮肤纹理和个人特色。
 9. 语言像资深审美顾问与审慎医生共同复核后的报告：具体、有取舍、能解释，不打分，不夸大，不使用“必须做”“会帅多少”等话术。
+10. executiveSummary 只写一到两句行动结论，不复述全部照片观察、治疗史和推理。每个 phase item 的 title 必须是用户能直接理解的具体项目名；action 先写“做什么”，再写边界。优先级必须拉开，不能把所有项目都写成“可选”。
 
 这是信息整理与面诊准备，不构成诊断、处方或效果承诺。`;
 

@@ -38,6 +38,7 @@ import type {
   FeatureKey,
   FeatureSelections,
   PersonalPlan,
+  PlanItem,
   SourceImage,
   UserPreferences,
 } from "./types";
@@ -154,6 +155,38 @@ function selectionsFromProfile(profile: AestheticProfile): FeatureSelections {
     skin: String(byKey.skin).includes("暖调") ? "健康暖调" : String(byKey.skin).includes("透亮") ? "均匀透亮" : "保留原生",
     hair: String(byKey.hair).includes("长发") ? "长发柔和" : String(byKey.hair).includes("中长") ? "中长层次" : "短发利落",
   };
+}
+
+type RankedPlanItem = {
+  item: PlanItem;
+  phaseLabel: string;
+  phaseTitle: string;
+};
+
+function planItems(plan: PersonalPlan): RankedPlanItem[] {
+  return plan.phases.flatMap((phase) => phase.items.map((item) => ({
+    item,
+    phaseLabel: phase.label,
+    phaseTitle: phase.title,
+  })));
+}
+
+function buildDecisionOverview(plan: PersonalPlan) {
+  const allItems = planItems(plan);
+  const now = allItems.filter(({ item }) => item.priority === "现在").slice(0, 3);
+  const fallbackNow = allItems.filter(({ item }) => item.priority !== "不建议").slice(0, 3);
+  const later = allItems.filter(({ item }) => item.priority === "观察后" || item.priority === "可选").slice(0, 3);
+  const avoid = allItems.filter(({ item }) => item.priority === "不建议").slice(0, 3);
+  return {
+    now: now.length ? now : fallbackNow,
+    later,
+    avoid,
+  };
+}
+
+function decisionProjectNames(items: RankedPlanItem[], fallback: string) {
+  const names = items.map(({ item }) => item.title).filter(Boolean).slice(0, 3);
+  return names.length ? names.join(" · ") : fallback;
 }
 
 function App() {
@@ -290,6 +323,11 @@ function App() {
     hasFront: captures.some((capture) => capture.kind === "front"),
     hasSide: captures.some((capture) => capture.kind === "left" || capture.kind === "right"),
   }), [captures]);
+
+  const decisionOverview = useMemo(
+    () => plan ? buildDecisionOverview(plan) : { now: [], later: [], avoid: [] },
+    [plan],
+  );
 
   const addReferences = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -953,14 +991,72 @@ function App() {
               <div className="plan-title-meta"><strong>{plan.estimatedBudget}</strong><span>{plan.generatedBy ? `由 ${plan.generatedBy} 生成` : "个人审美决策报告"}</span></div>
             </div>
 
-            <section className="plan-executive">
-              <span>先说结论</span>
-              <h2>{plan.executiveSummary || plan.headline}</h2>
-              <div className="plan-executive-grid">
+            <section className="decision-overview" id="action-plan">
+              <div className="decision-overview-heading">
+                <div><span>先看行动结论</span><h2>本轮做什么项目</h2></div>
+                <strong>{decisionOverview.now.length} 项优先</strong>
+              </div>
+              <div className="decision-project-map">
+                <div className="now"><span>现在</span><strong>{decisionProjectNames(decisionOverview.now, "先完成面诊复核")}</strong></div>
+                <div><span>之后</span><strong>{decisionProjectNames(decisionOverview.later, "根据首轮反馈再决定")}</strong></div>
+                <div className="avoid"><span>不做</span><strong>{decisionProjectNames(decisionOverview.avoid, "暂无明确禁区")}</strong></div>
+              </div>
+
+              <div className="decision-actions">
+                {decisionOverview.now.map(({ item, phaseLabel }, index) => (
+                  <article className="decision-action" key={`${phaseLabel}-${item.title}`}>
+                    <div className="decision-action-rank"><span>{String(index + 1).padStart(2, "0")}</span><b>现在做</b></div>
+                    <div className="decision-action-title">
+                      <div><small>{item.area}</small><h3>{item.title}</h3></div>
+                      <span className={`risk ${item.risk === "低" ? "low" : "review"}`}>{item.risk}</span>
+                    </div>
+                    <p className="decision-action-copy"><ArrowRight size={15} />{item.action}</p>
+                    <div className="decision-action-meta"><span>{item.timing}</span><span>{item.budget}</span></div>
+                    {item.materials && item.materials.length > 0 && (
+                      <div className="decision-materials">
+                        <span>面诊时比较</span>
+                        {item.materials.slice(0, 2).map((material) => (
+                          <div key={material.name}>
+                            <p><b>{material.name}</b><small>{material.category}</small></p>
+                            <strong>{material.amountOptions.join(" / ")}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+
+              {(decisionOverview.later.length > 0 || decisionOverview.avoid.length > 0) && (
+                <div className="decision-lanes">
+                  {decisionOverview.later.length > 0 && (
+                    <div className="decision-lane later">
+                      <span>观察后再决定</span>
+                      {decisionOverview.later.map(({ item }) => <p key={item.title}><b>{item.title}</b><small>{item.reassessAfter || item.notNow || item.timing}</small></p>)}
+                    </div>
+                  )}
+                  {decisionOverview.avoid.length > 0 && (
+                    <div className="decision-lane avoid">
+                      <span>本轮暂不建议</span>
+                      {decisionOverview.avoid.map(({ item }) => <p key={item.title}><b>{item.title}</b><small>{item.notNow || item.reason}</small></p>)}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <details className="decision-reasoning">
+                <summary>查看完整判断依据</summary>
                 <div><b>你的目标</b><p>{plan.aestheticGoal || preferences.personalGoal}</p></div>
                 <div><b>当前判断</b><p>{plan.currentState || "当前判断来自本次正侧脸、参考样本与用户填写信息，仍需面诊验证。"}</p></div>
-              </div>
+                <div><b>完整结论</b><p>{plan.executiveSummary || plan.headline}</p></div>
+              </details>
             </section>
+
+            <AiSimulationStudio captures={captures} plan={plan} selections={selections} />
+
+            <details className="report-archive">
+              <summary><span>分析依据</span><b>查看个人审美、照片观察与排序逻辑</b></summary>
+              <div className="report-archive-body">
 
             {plan.aestheticSynthesis && (
               <section className="aesthetic-synthesis">
@@ -994,8 +1090,6 @@ function App() {
                 <div className="aesthetic-antigoals"><span>这不是你要的</span>{plan.aestheticSynthesis.antiGoals.map((item) => <b key={item}>{item}</b>)}</div>
               </section>
             )}
-
-            <AiSimulationStudio captures={captures} plan={plan} selections={selections} />
 
             {plan.historyImpact && plan.historyImpact.length > 0 && (
               <section className="history-impact">
@@ -1032,8 +1126,12 @@ function App() {
               <div><span>必须保留</span>{plan.preserve.map((item) => <strong key={item}>{item}</strong>)}</div>
               <div><span>明确避免</span>{plan.avoid.map((item) => <strong key={item}>{item}</strong>)}</div>
             </div>
+              </div>
+            </details>
 
-            <div className="phase-list">
+            <details className="report-archive phase-archive">
+              <summary><span>完整方案</span><b>查看所有阶段、材料比较与复评条件</b></summary>
+              <div className="phase-list report-archive-body">
               <div className="report-section-heading"><span>05</span><div><b>分阶段行动方案</b><p>每一步都说明进入候选的理由、代价，以及什么情况下先不做。</p></div></div>
               {plan.phases.map((phase) => (
                 <section className="phase" key={phase.label}>
@@ -1071,7 +1169,8 @@ function App() {
                   ))}
                 </section>
               ))}
-            </div>
+              </div>
+            </details>
 
             {plan.unresolvedQuestions && plan.unresolvedQuestions.length > 0 && (
               <section className="unresolved-list">

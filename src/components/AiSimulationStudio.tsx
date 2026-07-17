@@ -1,8 +1,8 @@
-import { CircleAlert, ImageOff, LoaderCircle, RefreshCcw, ShieldCheck, Sparkles } from "lucide-react";
+import { CircleAlert, Columns2, ImageOff, LoaderCircle, RefreshCcw, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { generateSimulationWithAI } from "../lib/ai";
 import { loadLocal, saveLocal } from "../lib/storage";
-import type { CaptureKind, FaceCapture, FeatureSelections, PersonalPlan, SimulationResult, VisualScenario } from "../types";
+import type { CaptureKind, FaceCapture, FeatureSelections, PersonalPlan, SimulationEngine, SimulationResult, VisualScenario } from "../types";
 
 type Props = {
   captures: FaceCapture[];
@@ -14,6 +14,11 @@ const ANGLE_LABELS: Record<CaptureKind, string> = {
   front: "正脸",
   left: "左侧脸",
   right: "右侧脸",
+};
+
+const ENGINE_LABELS: Record<SimulationEngine, { name: string; note: string }> = {
+  "gpt-image": { name: "GPT Image 2", note: "结构变化更清楚" },
+  seedream: { name: "Seedream 5.0 Pro", note: "身份保留对照" },
 };
 
 const FALLBACK_SCENARIOS: VisualScenario[] = [
@@ -62,10 +67,12 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
   const angles = captures.map((capture) => capture.kind);
   const [stageId, setStageId] = useState<VisualScenario["id"]>(scenarios[0].id);
   const [angle, setAngle] = useState<CaptureKind>(angles.includes("front") ? "front" : angles[0] ?? "front");
+  const [engine, setEngine] = useState<SimulationEngine>("gpt-image");
   const [results, setResults] = useState<SimulationResult[]>([]);
   const [loadingKey, setLoadingKey] = useState("");
   const [error, setError] = useState("");
   const [compare, setCompare] = useState(50);
+  const [compareMode, setCompareMode] = useState<"side" | "slider">("side");
 
   useEffect(() => {
     void loadLocal<SimulationResult[]>("simulations").then((stored) => {
@@ -75,10 +82,10 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
 
   const scenario = scenarios.find((item) => item.id === stageId) ?? scenarios[0];
   const target = captures.find((capture) => capture.kind === angle);
-  const result = results.find((item) => item.stageId === stageId && item.angle === angle);
+  const result = results.find((item) => item.stageId === stageId && item.angle === angle && (item.engine ?? "seedream") === engine);
   const beforeUrl = useBlobUrl(target?.blob);
   const afterUrl = useBlobUrl(result?.image);
-  const key = `${stageId}:${angle}`;
+  const key = `${engine}:${stageId}:${angle}`;
   const isLoading = loadingKey === key;
 
   const identityReferences = useMemo(
@@ -97,8 +104,12 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
         scenario,
         plan,
         selections,
+        engine,
       });
-      const merged = [...results.filter((item) => !(item.stageId === stageId && item.angle === angle)), next];
+      const merged = [
+        ...results.filter((item) => !(item.stageId === stageId && item.angle === angle && (item.engine ?? "seedream") === engine)),
+        next,
+      ];
       setResults(merged);
       await saveLocal("simulations", merged);
     } catch (generateError) {
@@ -116,7 +127,15 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
     <section className="ai-studio">
       <div className="ai-studio-heading">
         <div><span>AI VISUAL LAB</span><h2>按阶段看见真实方向</h2></div>
-        <span className="ai-badge"><Sparkles size={14} /> Seedream 5.0 Pro 视觉模拟</span>
+        <span className="ai-badge"><Sparkles size={14} /> {ENGINE_LABELS[engine].name}</span>
+      </div>
+
+      <div className="engine-switch" role="group" aria-label="选择视觉模型">
+        {(Object.keys(ENGINE_LABELS) as SimulationEngine[]).map((item) => (
+          <button type="button" key={item} className={engine === item ? "active" : ""} onClick={() => setEngine(item)}>
+            <strong>{ENGINE_LABELS[item].name}</strong><small>{ENGINE_LABELS[item].note}</small>
+          </button>
+        ))}
       </div>
 
       <div className="scenario-tabs" role="tablist" aria-label="选择模拟阶段">
@@ -137,28 +156,46 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
         {angles.map((item) => <button type="button" key={item} className={angle === item ? "active" : ""} onClick={() => setAngle(item)}>{ANGLE_LABELS[item]}</button>)}
       </div>
 
-      <div className="ai-simulation-stage">
-        {beforeUrl && <img src={beforeUrl} alt={`${ANGLE_LABELS[angle]}原始照片`} />}
-        {afterUrl && (
-          <div className="ai-simulation-after" style={{ clipPath: `inset(0 ${100 - compare}% 0 0)` }}>
-            <img src={afterUrl} alt={`${ANGLE_LABELS[angle]}AI方向模拟`} />
+      {afterUrl && (
+        <div className="comparison-mode" role="group" aria-label="选择对比方式">
+          <button type="button" className={compareMode === "side" ? "active" : ""} onClick={() => setCompareMode("side")}><Columns2 size={15} /> 前后对照</button>
+          <button type="button" className={compareMode === "slider" ? "active" : ""} onClick={() => setCompareMode("slider")}><SlidersHorizontal size={15} /> 叠加查看</button>
+        </div>
+      )}
+
+      {afterUrl && compareMode === "side" ? (
+        <div className="ai-comparison-grid">
+          <figure><div>{beforeUrl && <img src={beforeUrl} alt={`${ANGLE_LABELS[angle]}原始照片`} />}</div><figcaption><span>BEFORE</span><strong>原始</strong></figcaption></figure>
+          <figure className="after"><div><img src={afterUrl} alt={`${ANGLE_LABELS[angle]}AI方向模拟`} /></div><figcaption><span>AFTER</span><strong>AI 方向模拟</strong></figcaption></figure>
+        </div>
+      ) : (
+        <>
+          <div className="ai-simulation-stage">
+            {beforeUrl && <img src={beforeUrl} alt={`${ANGLE_LABELS[angle]}原始照片`} />}
+            {afterUrl && (
+              <div className="ai-simulation-after" style={{ clipPath: `inset(0 ${100 - compare}% 0 0)` }}>
+                <img src={afterUrl} alt={`${ANGLE_LABELS[angle]}AI方向模拟`} />
+              </div>
+            )}
+            {afterUrl && <div className="compare-line" style={{ left: `${compare}%` }}><span /></div>}
+            <span className="before-label">原始</span>
+            {afterUrl && <span className="after-label">AI 方向模拟</span>}
+            {isLoading && <div className="simulation-loading"><LoaderCircle size={23} className="spin" /><strong>{ENGINE_LABELS[engine].name} 正在局部编辑原图</strong><span>复杂照片可能需要约 1–2 分钟，请保持页面开启</span></div>}
           </div>
-        )}
-        {afterUrl && <div className="compare-line" style={{ left: `${compare}%` }}><span /></div>}
-        <span className="before-label">原始</span>
-        {afterUrl && <span className="after-label">AI 方向模拟</span>}
-        {isLoading && <div className="simulation-loading"><LoaderCircle size={23} className="spin" /><strong>正在保持身份与原角度</strong><span>通常需要 20–60 秒，请不要关闭页面</span></div>}
-      </div>
-      {afterUrl && <input className="compare-slider" type="range" min="0" max="100" value={compare} onChange={(event) => setCompare(Number(event.target.value))} aria-label="拖动比较原始照片和AI模拟" />}
+          {afterUrl && compareMode === "slider" && <input className="compare-slider" type="range" min="0" max="100" value={compare} onChange={(event) => setCompare(Number(event.target.value))} aria-label="拖动比较原始照片和AI模拟" />}
+        </>
+      )}
+
+      {isLoading && afterUrl && compareMode === "side" && <div className="simulation-loading standalone"><LoaderCircle size={23} className="spin" /><strong>{ENGINE_LABELS[engine].name} 正在局部编辑原图</strong><span>复杂照片可能需要约 1–2 分钟，请保持页面开启</span></div>}
 
       {error && <div className="ai-error"><CircleAlert size={17} /><span>{error}</span></div>}
       <button className="generate-image-button" type="button" onClick={() => void generate()} disabled={isLoading}>
-        {isLoading ? <><LoaderCircle className="spin" size={18} /> 正在生成</> : result ? <><RefreshCcw size={18} /> 重新生成这一角度</> : <><Sparkles size={18} /> 生成这一阶段 · {ANGLE_LABELS[angle]}</>}
+        {isLoading ? <><LoaderCircle className="spin" size={18} /> 正在生成</> : result ? <><RefreshCcw size={18} /> 用 {ENGINE_LABELS[engine].name} 重新生成</> : <><Sparkles size={18} /> 用 {ENGINE_LABELS[engine].name} 生成 · {ANGLE_LABELS[angle]}</>}
       </button>
 
       <div className="simulation-disclosure">
         <ShieldCheck size={18} />
-        <p><strong>原图不会被修改。</strong> 这是基于审美方向的生成图，不是医学预测，也不能代表某个材料或剂量一定达到的结果。输出会保留“AI 生成”标识。</p>
+        <p><strong>原图不会被修改。</strong> 这是审美方向图，不是医学预测，也不代表某个材料或剂量一定达到的结果。生成图可能有轻微取景漂移，以“前后对照”为主。</p>
       </div>
     </section>
   );

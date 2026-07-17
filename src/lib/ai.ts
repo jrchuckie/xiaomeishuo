@@ -190,6 +190,7 @@ export async function generateSimulationWithAI(input: {
   scenario: VisualScenario;
   plan: PersonalPlan;
   selections: FeatureSelections;
+  engine: "gpt-image" | "seedream";
 }) {
   const form = new FormData();
   form.set("context", JSON.stringify({
@@ -204,6 +205,7 @@ export async function generateSimulationWithAI(input: {
     preserve: input.plan.preserve,
     avoid: input.plan.avoid,
     selectedDirections: input.selections,
+    engine: input.engine,
   }));
   const target = await resizeImageBlob(input.target.blob, 1536, 0.82);
   const identityReferences = await Promise.all(input.identityReferences.slice(0, 2).map(async (reference) => ({
@@ -225,6 +227,7 @@ export async function generateSimulationWithAI(input: {
     id: crypto.randomUUID(),
     stageId: input.scenario.id,
     angle: input.target.kind,
+    engine: input.engine,
     image: await dataUrlToBlob(result.image),
     generatedAt: result.generatedAt,
     model: result.model,
