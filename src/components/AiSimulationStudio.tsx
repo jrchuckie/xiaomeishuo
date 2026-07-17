@@ -2,12 +2,13 @@ import { CircleAlert, Columns2, ImageOff, LoaderCircle, RefreshCcw, ShieldCheck,
 import { useEffect, useMemo, useState } from "react";
 import { generateSimulationWithAI } from "../lib/ai";
 import { loadLocal, saveLocal } from "../lib/storage";
-import type { CaptureKind, FaceCapture, FeatureSelections, PersonalPlan, SimulationEngine, SimulationResult, VisualScenario } from "../types";
+import type { CaptureKind, FaceCapture, FeatureSelections, PersonalPlan, SimulationEngine, SimulationResult, UserPreferences, VisualScenario } from "../types";
 
 type Props = {
   captures: FaceCapture[];
   plan: PersonalPlan;
   selections: FeatureSelections;
+  preferences: UserPreferences;
 };
 
 const ANGLE_LABELS: Record<CaptureKind, string> = {
@@ -27,8 +28,8 @@ const FALLBACK_SCENARIOS: VisualScenario[] = [
     label: "阶段 1",
     title: "低风险方向验证",
     summary: "先看可逆、低负担改变是否已经足够。",
-    changes: ["仅呈现妆发、眉形与轻微状态优化"],
-    unchanged: ["五官身份", "骨性轮廓", "真实肤色与皮肤纹理"],
+    changes: ["仅呈现用户主动选择方向的保守幅度"],
+    unchanged: ["未勾选的五官", "真实肤色与皮肤纹理", "发量与发际线"],
   },
   {
     id: "stage-2",
@@ -62,7 +63,7 @@ function useBlobUrl(blob?: Blob) {
   return url;
 }
 
-export default function AiSimulationStudio({ captures, plan, selections }: Props) {
+export default function AiSimulationStudio({ captures, plan, selections, preferences }: Props) {
   const scenarios = plan.visualScenarios?.length === 3 ? plan.visualScenarios : FALLBACK_SCENARIOS;
   const angles = captures.map((capture) => capture.kind);
   const [stageId, setStageId] = useState<VisualScenario["id"]>(scenarios[0].id);
@@ -95,6 +96,11 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
 
   const generate = async () => {
     if (!target) return;
+    const hasAuthorizedChange = Object.values(selections).some((direction) => !direction.includes("保留原生"));
+    if (!hasAuthorizedChange) {
+      setError("请先返回“方向选择”，至少主动选择一项希望改变的方向。系统不会自动修改推测出的偏好。");
+      return;
+    }
     setError("");
     setLoadingKey(key);
     try {
@@ -104,6 +110,7 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
         scenario,
         plan,
         selections,
+        preferences,
         engine,
       });
       const merged = [
@@ -197,6 +204,12 @@ export default function AiSimulationStudio({ captures, plan, selections }: Props
         <ShieldCheck size={18} />
         <p><strong>原图不会被修改。</strong> 这是审美方向图，不是医学预测，也不代表某个材料或剂量一定达到的结果。生成图可能有轻微取景漂移，以“前后对照”为主。</p>
       </div>
+
+      <details className="validated-simulation-example">
+        <summary>查看经人工复核的完整演示样例</summary>
+        <img src="/demo/validated-contour-simulation.jpg" alt="正侧脸分阶段轮廓模拟与项目剂量演示" />
+        <p>该样例展示产品应达到的颗粒度：同角度前后对照、正侧脸一致、分阶段变化与项目位置及参考用量。具体方案仍需医生面诊确认。</p>
+      </details>
     </section>
   );
 }

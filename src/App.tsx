@@ -102,21 +102,21 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 const FEATURE_DIRECTIONS: { key: FeatureKey; label: string; options: string[]; note?: string }[] = [
   { key: "eyes", label: "眼睛", options: ["保留原生", "轻微放大", "拉长眼尾"] },
   { key: "nose", label: "鼻子", options: ["保留原生", "鼻尖精致", "直线鼻背"] },
-  { key: "contour", label: "轮廓", options: ["保留原生", "收窄下颌", "下巴舒展"] },
+  { key: "contour", label: "轮廓", options: ["保留原生", "颧下过渡平顺", "下颌线强化", "下巴舒展"] },
   { key: "brows", label: "眉毛", options: ["保留原生", "清晰眉尾", "轻挑眉峰"] },
   { key: "lips", label: "嘴唇", options: ["保留原生", "边界清晰", "轻微丰润"] },
   { key: "skin", label: "肤色质感", options: ["保留原生", "均匀透亮", "健康暖调"] },
-  { key: "hair", label: "发型", options: ["短发利落", "中长层次", "长发柔和"], note: "进入方案，不改变面部结构模拟" },
+  { key: "hair", label: "发型", options: ["保留原生", "短发利落", "中长层次", "长发柔和"], note: "只有主动选择后才进入模拟；默认锁定发量、发际线与长度" },
 ];
 
 const DEFAULT_SELECTIONS: FeatureSelections = {
   eyes: "保留原生",
   nose: "保留原生",
   contour: "保留原生",
-  brows: "清晰眉尾",
+  brows: "保留原生",
   lips: "保留原生",
   skin: "保留原生",
-  hair: "短发利落",
+  hair: "保留原生",
 };
 
 function resumableScreen(
@@ -145,16 +145,10 @@ function resumableScreen(
 }
 
 function selectionsFromProfile(profile: AestheticProfile): FeatureSelections {
-  const byKey = Object.fromEntries(profile.features.map((feature) => [feature.key, feature.choice]));
-  return {
-    eyes: String(byKey.eyes).includes("细长") ? "拉长眼尾" : String(byKey.eyes).includes("圆润") ? "轻微放大" : "保留原生",
-    nose: String(byKey.nose).includes("鼻尖") ? "鼻尖精致" : String(byKey.nose).includes("直线") ? "直线鼻背" : "保留原生",
-    contour: String(byKey.face).includes("利落") ? "收窄下颌" : String(byKey.face).includes("柔和") ? "保留原生" : "保留原生",
-    brows: String(byKey.brows).includes("眉峰") ? "轻挑眉峰" : String(byKey.brows).includes("清晰") ? "清晰眉尾" : "保留原生",
-    lips: String(byKey.lips).includes("饱满") ? "轻微丰润" : String(byKey.lips).includes("弧线") ? "边界清晰" : "保留原生",
-    skin: String(byKey.skin).includes("暖调") ? "健康暖调" : String(byKey.skin).includes("透亮") ? "均匀透亮" : "保留原生",
-    hair: String(byKey.hair).includes("长发") ? "长发柔和" : String(byKey.hair).includes("中长") ? "中长层次" : "短发利落",
-  };
+  // The profile explains likely preferences; it never authorizes a change.
+  // Users explicitly opt into every edited region on the direction screen.
+  void profile;
+  return { ...DEFAULT_SELECTIONS };
 }
 
 type RankedPlanItem = {
@@ -263,7 +257,7 @@ function App() {
           void saveLocal("faceProfile", refreshedFaceProfile);
         }
         setPreferences(restoredPreferences);
-        if (storedSelections) setSelections(storedSelections);
+        if (storedSelections) setSelections({ ...DEFAULT_SELECTIONS, ...storedSelections });
         if (restoredPlan) setPlan(restoredPlan);
         if (storedProgress?.calibration?.length) setCalibration(storedProgress.calibration);
         if (storedProgress?.captureAttested) setCaptureAttested(true);
@@ -1052,7 +1046,7 @@ function App() {
               </details>
             </section>
 
-            <AiSimulationStudio captures={captures} plan={plan} selections={selections} />
+            <AiSimulationStudio captures={captures} plan={plan} selections={selections} preferences={preferences} />
 
             <details className="report-archive">
               <summary><span>分析依据</span><b>查看个人审美、照片观察与排序逻辑</b></summary>

@@ -190,6 +190,7 @@ export async function generateSimulationWithAI(input: {
   scenario: VisualScenario;
   plan: PersonalPlan;
   selections: FeatureSelections;
+  preferences: UserPreferences;
   engine: "gpt-image" | "seedream";
 }) {
   const form = new FormData();
@@ -205,6 +206,22 @@ export async function generateSimulationWithAI(input: {
     preserve: input.plan.preserve,
     avoid: input.plan.avoid,
     selectedDirections: input.selections,
+    userConstraints: {
+      personalGoal: input.preferences.personalGoal,
+      currentConcerns: input.preferences.currentConcerns,
+      priorities: input.preferences.priorities,
+      mustPreserve: input.preferences.mustPreserve,
+      excluded: input.preferences.excluded,
+      doctorProposal: input.preferences.doctorProposal,
+      treatmentHistory: input.preferences.treatmentHistory.map((item) => ({
+        category: item.category,
+        product: item.product,
+        amount: item.amount,
+        areas: item.areas,
+        date: item.date,
+        outcome: item.outcome,
+      })),
+    },
     engine: input.engine,
   }));
   const target = await resizeImageBlob(input.target.blob, 1536, 0.82);
