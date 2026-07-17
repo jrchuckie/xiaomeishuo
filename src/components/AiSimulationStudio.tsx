@@ -71,6 +71,7 @@ export default function AiSimulationStudio({ captures, plan, selections, prefere
   const [engine, setEngine] = useState<SimulationEngine>("gpt-image");
   const [results, setResults] = useState<SimulationResult[]>([]);
   const [loadingKey, setLoadingKey] = useState("");
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [error, setError] = useState("");
   const [compare, setCompare] = useState(50);
   const [compareMode, setCompareMode] = useState<"side" | "slider">("side");
@@ -103,6 +104,7 @@ export default function AiSimulationStudio({ captures, plan, selections, prefere
     }
     setError("");
     setLoadingKey(key);
+    setLoadingMessage("正在安全提交照片");
     try {
       const next = await generateSimulationWithAI({
         target,
@@ -112,6 +114,7 @@ export default function AiSimulationStudio({ captures, plan, selections, prefere
         selections,
         preferences,
         engine,
+        onProgress: setLoadingMessage,
       });
       const merged = [
         ...results.filter((item) => !(item.stageId === stageId && item.angle === angle && (item.engine ?? "seedream") === engine)),
@@ -123,6 +126,7 @@ export default function AiSimulationStudio({ captures, plan, selections, prefere
       setError(generateError instanceof Error ? generateError.message : "效果图没有生成，请重试");
     } finally {
       setLoadingKey("");
+      setLoadingMessage("");
     }
   };
 
@@ -187,13 +191,13 @@ export default function AiSimulationStudio({ captures, plan, selections, prefere
             {afterUrl && <div className="compare-line" style={{ left: `${compare}%` }}><span /></div>}
             <span className="before-label">原始</span>
             {afterUrl && <span className="after-label">AI 方向模拟</span>}
-            {isLoading && <div className="simulation-loading"><LoaderCircle size={23} className="spin" /><strong>{ENGINE_LABELS[engine].name} 正在局部编辑原图</strong><span>复杂照片可能需要约 1–2 分钟，请保持页面开启</span></div>}
+            {isLoading && <div className="simulation-loading"><LoaderCircle size={23} className="spin" /><strong>{loadingMessage || `${ENGINE_LABELS[engine].name} 正在局部编辑原图`}</strong><span>任务已在后台保留，短暂断网会自动重连</span></div>}
           </div>
           {afterUrl && compareMode === "slider" && <input className="compare-slider" type="range" min="0" max="100" value={compare} onChange={(event) => setCompare(Number(event.target.value))} aria-label="拖动比较原始照片和AI模拟" />}
         </>
       )}
 
-      {isLoading && afterUrl && compareMode === "side" && <div className="simulation-loading standalone"><LoaderCircle size={23} className="spin" /><strong>{ENGINE_LABELS[engine].name} 正在局部编辑原图</strong><span>复杂照片可能需要约 1–2 分钟，请保持页面开启</span></div>}
+      {isLoading && afterUrl && compareMode === "side" && <div className="simulation-loading standalone"><LoaderCircle size={23} className="spin" /><strong>{loadingMessage || `${ENGINE_LABELS[engine].name} 正在局部编辑原图`}</strong><span>任务已在后台保留，短暂断网会自动重连</span></div>}
 
       {error && <div className="ai-error"><CircleAlert size={17} /><span>{error}</span></div>}
       <button className="generate-image-button" type="button" onClick={() => void generate()} disabled={isLoading}>

@@ -46,19 +46,13 @@ async function postFormJson<T>(endpoint: string, form: FormData) {
   return body as T;
 }
 
-async function postFormImage<T extends Record<string, unknown>>(endpoint: string, form: FormData) {
-  let response: Response;
+async function readImageResponse<T extends Record<string, unknown>>(response: Response) {
+  let payload: Uint8Array;
   try {
-    response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "X-XMS-Image-Protocol": "binary-v1" },
-      body: form,
-    });
+    payload = new Uint8Array(await response.arrayBuffer());
   } catch {
-    throw new Error("网络连接中断。照片和当前选择已保存，请保持页面开启后重试。");
+    throw new Error("效果图下载中断，后台任务仍然保留，正在重新连接。");
   }
-
-  const payload = new Uint8Array(await response.arrayBuffer());
   const decoder = new TextDecoder();
   if (!response.ok) {
     const text = decoder.decode(payload).trim();
@@ -127,6 +121,47 @@ async function postFormImage<T extends Record<string, unknown>>(endpoint: string
     ...legacy,
     image: await dataUrlToBlob(legacy.image),
   } as T & { image: Blob };
+}
+
+async function postFormImage<T extends Record<string, unknown>>(endpoint: string, form: FormData) {
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "X-XMS-Image-Protocol": "binary-v1" },
+      body: form,
+    });
+  } catch {
+    throw new Error("网络连接中断。照片和当前选择已保存，请保持页面开启后重试。");
+  }
+  return readImageResponse<T>(response);
+}
+
+async function pollImageJob<T extends Record<string, unknown>>(
+  endpoint: string,
+  payload: { jobId: string; token: string },
+) {
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error("网络短暂中断，效果图仍在后台生成。");
+  }
+
+  if (response.headers.get("X-XMS-Image-Protocol") === "binary-v1") {
+    return { status: "completed" as const, result: await readImageResponse<T>(response) };
+  }
+  const body = await response.json().catch(() => null) as {
+    status?: "queued" | "in_progress";
+    error?: string;
+  } | null;
+  if (!response.ok) throw new Error(body?.error || `AI 服务返回 ${response.status}`);
+  if (!body?.status) throw new Error("效果图状态没有完整送达。");
+  return { status: body.status };
 }
 
 async function postJson<T>(endpoint: string, payload: unknown) {
@@ -295,6 +330,7 @@ export async function generateSimulationWithAI(input: {
   selections: FeatureSelections;
   preferences: UserPreferences;
   engine: "gpt-image" | "seedream";
+  onProgress?: (message: string) => void;
 }) {
   const form = new FormData();
   form.set("context", JSON.stringify({
@@ -337,11 +373,60 @@ export async function generateSimulationWithAI(input: {
     form.set(`identity_${index}`, blob, reference.name);
   });
 
-  const result = await postFormImage<{
+  let result: {
+    image: Blob;
     model: string;
     generatedAt: string;
-    assumptions: string[];
-  }>("/api/ai/simulate", form);
+    assumptions?: string[];
+  };
+  if (input.engine === "gpt-image") {
+    input.onProgress?.("正在提交图片任务");
+    const started = await postFormJson<{
+      status: "queued" | "in_progress" | "completed";
+      jobId: string;
+      token: string;
+    }>("/api/ai/simulate", form);
+
+    input.onProgress?.("任务已提交，GPT Image 2 正在后台生成");
+    let consecutiveFailures = 0;
+    const startedAt = Date.now();
+    let completed: { image: Blob; model: string; generatedAt: string } | undefined;
+    for (let attempt = 0; attempt < 180; attempt += 1) {
+      await delay(attempt === 0 ? 800 : 3000);
+      try {
+        const status = await pollImageJob<{ model: string; generatedAt: string }>(
+          "/api/ai/simulate/status",
+          { jobId: started.jobId, token: started.token },
+        );
+        consecutiveFailures = 0;
+        if (status.status === "completed") {
+          completed = status.result;
+          break;
+        }
+        const elapsedSeconds = Math.round((Date.now() - startedAt) / 1000);
+        input.onProgress?.(
+          elapsedSeconds < 30
+            ? "正在锁定本人身份、肤色与未选择区域"
+            : elapsedSeconds < 80
+              ? "正在生成已选择的局部结构变化"
+              : `正在完成高清效果图，已生成约 ${elapsedSeconds} 秒`,
+        );
+      } catch (error) {
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= 6) throw error;
+        input.onProgress?.("网络有短暂波动，后台任务未丢失，正在重新连接");
+      }
+    }
+    if (!completed) throw new Error("效果图生成超过 9 分钟，请稍后重新进入本页重试。");
+    result = { ...completed, assumptions: input.scenario.changes };
+  } else {
+    input.onProgress?.("Seedream 正在局部编辑原图");
+    result = await postFormImage<{
+      model: string;
+      generatedAt: string;
+      assumptions: string[];
+    }>("/api/ai/simulate", form);
+  }
   return {
     id: crypto.randomUUID(),
     stageId: input.scenario.id,
@@ -350,6 +435,6 @@ export async function generateSimulationWithAI(input: {
     image: result.image,
     generatedAt: result.generatedAt,
     model: result.model,
-    assumptions: result.assumptions,
+    assumptions: result.assumptions ?? input.scenario.changes,
   } satisfies SimulationResult;
 }

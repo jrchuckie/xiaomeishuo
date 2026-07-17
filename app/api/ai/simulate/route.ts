@@ -1,5 +1,6 @@
 import { apiError, readJsonField, streamImageTask, streamJsonTask } from "../_lib/common";
-import { generateOpenAIImageEdit } from "../_lib/gpt-image";
+import { startBackgroundOpenAIImageEdit } from "../_lib/gpt-image";
+import { signImageJob } from "../_lib/image-job";
 import { generateSeedreamImage } from "../_lib/seedream";
 
 export const runtime = "nodejs";
@@ -206,10 +207,17 @@ export async function POST(request: Request) {
     const engine = context.engine === "seedream" ? "seedream" : "gpt-image";
     const geometry = await imageGeometry(target);
     const prompt = simulationPrompt(context, identityReferences.length, geometry.description);
+    if (engine === "gpt-image") {
+      const job = await startBackgroundOpenAIImageEdit(prompt, [target, ...identityReferences], geometry.outputSize);
+      return Response.json({
+        status: job.status,
+        jobId: job.id,
+        token: signImageJob(job.id),
+      }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     const task = async () => {
-      const result = engine === "seedream"
-        ? await generateSeedreamImage(prompt, [target, ...identityReferences])
-        : await generateOpenAIImageEdit(prompt, [target, ...identityReferences], geometry.outputSize);
+      const result = await generateSeedreamImage(prompt, [target, ...identityReferences]);
       return {
         image: result.image,
         model: result.model,
