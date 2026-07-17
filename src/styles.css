@@ -35,6 +35,137 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Brand opening: preference becomes a personal, realistic direction. */
+.splash-screen {
+  position: relative;
+  width: min(100%, 520px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  color: #fff;
+  background: var(--ink);
+  isolation: isolate;
+  transition: opacity 420ms ease, transform 420ms cubic-bezier(.7, 0, .3, 1);
+}
+.splash-screen::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  background: var(--red);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: splash-edge 2.65s cubic-bezier(.4, 0, .2, 1) forwards;
+}
+.splash-screen.is-exiting { opacity: 0; transform: scale(1.015); }
+.splash-lines { position: absolute; inset: 0; z-index: -2; pointer-events: none; }
+.splash-lines i { position: absolute; display: block; background: #2a2a2d; opacity: .72; }
+.splash-lines i:nth-child(1), .splash-lines i:nth-child(2) { top: 0; bottom: 0; width: 1px; }
+.splash-lines i:nth-child(1) { left: 20px; }
+.splash-lines i:nth-child(2) { right: 20px; }
+.splash-lines i:nth-child(3), .splash-lines i:nth-child(4) { left: 0; right: 0; height: 1px; }
+.splash-lines i:nth-child(3) { top: calc(28% + env(safe-area-inset-top)); }
+.splash-lines i:nth-child(4) { bottom: calc(132px + env(safe-area-inset-bottom)); }
+.splash-skip {
+  position: absolute;
+  z-index: 3;
+  top: calc(18px + env(safe-area-inset-top));
+  right: 20px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  color: #aaaab0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 720;
+  opacity: 0;
+  animation: splash-fade-in 320ms 1.15s ease forwards;
+}
+.splash-stage {
+  min-height: 72dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(70px + env(safe-area-inset-top)) 34px 40px;
+}
+.splash-brand-lockup { display: flex; align-items: center; gap: 16px; }
+.splash-mark { position: relative; width: 78px; height: 50px; display: block; }
+.splash-mark i {
+  position: absolute;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  animation-duration: 760ms;
+  animation-delay: 90ms;
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(.18, .9, .24, 1);
+}
+.splash-mark i:first-child { left: 0; background: var(--red); transform: translateX(-56px); animation-name: splash-dot-left; }
+.splash-mark i:last-child { right: 0; background: #fff; transform: translateX(56px); animation-name: splash-dot-right; }
+.splash-name { display: grid; gap: 2px; overflow: hidden; }
+.splash-name strong { font-size: 28px; line-height: 1.1; letter-spacing: 0; transform: translateY(115%); animation: splash-rise 520ms 620ms cubic-bezier(.2, .8, .2, 1) forwards; }
+.splash-name span { color: #85858d; font-size: 9px; font-weight: 780; letter-spacing: 2.4px; opacity: 0; animation: splash-fade-in 360ms 920ms ease forwards; }
+.splash-thesis { margin: 44px 0 0; font-size: clamp(31px, 9vw, 43px); line-height: 1.13; letter-spacing: 0; }
+.splash-thesis span { display: block; opacity: 0; transform: translateY(24px); animation: splash-copy-in 480ms cubic-bezier(.2, .8, .2, 1) forwards; }
+.splash-thesis span:first-child { animation-delay: 920ms; }
+.splash-thesis span:last-child {
+  color: var(--red);
+  font-size: clamp(24px, 7.6vw, 39px);
+  white-space: nowrap;
+  animation-delay: 1.18s;
+}
+.splash-story {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: #353539;
+}
+.splash-story p { min-width: 0; min-height: 70px; display: grid; align-content: center; gap: 6px; margin: 0; padding: 10px; background: var(--ink); opacity: 0; transform: translateY(16px); animation: splash-copy-in 360ms ease forwards; }
+.splash-story p:nth-child(1) { animation-delay: 1.5s; }
+.splash-story p:nth-child(2) { animation-delay: 1.72s; }
+.splash-story p:nth-child(3) { animation-delay: 1.94s; }
+.splash-story b { color: var(--red); font-size: 9px; }
+.splash-story span { color: #d7d7dc; font-size: 10px; font-weight: 720; line-height: 1.4; }
+.splash-status {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  bottom: calc(26px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.splash-status > span { color: #777780; font-size: 9px; white-space: nowrap; }
+.splash-progress { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.splash-progress i { height: 2px; background: #414147; transform: scaleX(0); transform-origin: left; animation: splash-progress 360ms ease forwards; }
+.splash-progress i:nth-child(1) { animation-delay: 1.5s; }
+.splash-progress i:nth-child(2) { animation-delay: 1.82s; }
+.splash-progress i:nth-child(3) { animation-delay: 2.14s; }
+.splash-screen.is-returning .splash-story, .splash-screen.is-returning .splash-thesis { display: none; }
+.splash-screen.is-returning .splash-stage { min-height: 100dvh; padding-bottom: 90px; }
+.splash-screen.is-returning .splash-brand-lockup { justify-content: center; }
+.splash-screen.is-returning .splash-skip { display: none; }
+
+@keyframes splash-dot-left { to { transform: translateX(0); } }
+@keyframes splash-dot-right { to { transform: translateX(0); } }
+@keyframes splash-rise { to { transform: translateY(0); } }
+@keyframes splash-fade-in { to { opacity: 1; } }
+@keyframes splash-copy-in { to { opacity: 1; transform: translateY(0); } }
+@keyframes splash-progress { to { background: var(--red); transform: scaleX(1); } }
+@keyframes splash-edge { 0%, 35% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+
 .app-shell {
   width: min(100%, 520px);
   min-height: 100dvh;
@@ -710,6 +841,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 @media (max-width: 370px) {
+  .splash-stage { padding-left: 24px; padding-right: 24px; }
+  .splash-story, .splash-status { left: 24px; right: 24px; }
+  .splash-thesis { font-size: 30px; }
   .screen { padding-left: 16px; padding-right: 16px; }
   .screen-heading h1 { font-size: 32px; }
   .reference-grid { grid-template-columns: repeat(3, 1fr); }
@@ -721,6 +855,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 @media (min-width: 700px) {
   body { padding: 24px 0; }
+  .splash-screen { min-height: calc(100dvh - 48px); border: 1px solid #29292d; }
+  .splash-screen.is-returning .splash-stage { min-height: calc(100dvh - 48px); }
   .app-shell { min-height: calc(100dvh - 48px); border: 1px solid #d5d5d2; }
   .progress-nav { bottom: 24px; }
 }

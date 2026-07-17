@@ -19,10 +19,11 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import AiSimulationStudio from "./components/AiSimulationStudio";
 import CameraCapture from "./components/CameraCapture";
 import FeatureDirectionPicker from "./components/FeatureDirectionPicker";
+import SplashScreen from "./components/SplashScreen";
 import TreatmentHistoryEditor from "./components/TreatmentHistoryEditor";
 import { generateAestheticProfileWithAI, generatePersonalPlanWithAI } from "./lib/ai";
 import { analyzeAesthetic, STYLE_OPTIONS } from "./lib/aesthetic";
@@ -184,6 +185,8 @@ function decisionProjectNames(items: RankedPlanItem[], fallback: string) {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const finishSplash = useCallback(() => setShowSplash(false), []);
   const [screen, setScreen] = useState<Screen>("source");
   const [boardUrl, setBoardUrl] = useState("");
   const [boardStatus, setBoardStatus] = useState(BOARD_STATUS_DEFAULT);
@@ -604,6 +607,10 @@ function App() {
     }
     setShowInstall(true);
   };
+
+  if (showSplash) {
+    return <SplashScreen ready={hydrated} onComplete={finishSplash} />;
+  }
 
   if (!hydrated) {
     return <div className="boot"><LoaderCircle className="spin" /><span>正在打开你的本地档案</span></div>;
