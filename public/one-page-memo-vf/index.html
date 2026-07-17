@@ -3584,5 +3584,16 @@
       <article class="risk-card"><span>风险 03 · 竞争窗口</span><h3>新氧等平台可能更早推出类似功能</h3><p>成熟平台已有供给与交易入口，可能快速复制表层功能。</p></article>
     </div></div></section>
   </main>
+  <script>
+    const scrollToProductVideo = () => {
+      if (window.location.hash === "#product-video") {
+        window.requestAnimationFrame(() => {
+          document.getElementById("product-video")?.scrollIntoView({ block: "start" });
+        });
+      }
+    };
+    window.addEventListener("load", scrollToProductVideo);
+    window.addEventListener("hashchange", scrollToProductVideo);
+  </script>
 </body>
 </html>
