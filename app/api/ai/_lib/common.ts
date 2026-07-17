@@ -27,6 +27,47 @@ export function apiError(error: unknown) {
   return Response.json({ error: message }, { status });
 }
 
+export function streamJsonTask(task: () => Promise<unknown>) {
+  const encoder = new TextEncoder();
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let cancelled = false;
+
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const push = (value: string) => {
+        if (!cancelled) controller.enqueue(encoder.encode(value));
+      };
+
+      // Flush response headers immediately so long AI calls stay connected on mobile.
+      push(" ".repeat(2048));
+      heartbeat = setInterval(() => push(" ".repeat(2048)), 4000);
+
+      void task()
+        .then((result) => push(JSON.stringify(result)))
+        .catch(async (error) => {
+          const response = apiError(error);
+          push(await response.text());
+        })
+        .finally(() => {
+          if (heartbeat) clearInterval(heartbeat);
+          if (!cancelled) controller.close();
+        });
+    },
+    cancel() {
+      cancelled = true;
+      if (heartbeat) clearInterval(heartbeat);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Cache-Control": "no-store, no-transform",
+      "Content-Type": "application/json; charset=utf-8",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
 export function readJsonField(form: FormData, key: string) {
   const value = form.get(key);
   if (typeof value !== "string") throw new Error(`MISSING_${key.toUpperCase()}`);

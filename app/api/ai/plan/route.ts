@@ -1,4 +1,4 @@
-import { apiError, readJsonField } from "../_lib/common";
+import { apiError, readJsonField, streamJsonTask } from "../_lib/common";
 import { blobToOpenAIImage, createStructuredPlan, OPENAI_PLAN_MODEL, type OpenAIContentPart } from "../_lib/openai";
 
 export const runtime = "nodejs";
@@ -230,7 +230,7 @@ export async function POST(request: Request) {
       },
     ];
 
-    const imageOrder = ["front", "left", "right"];
+    const imageOrder = ["front", form.get("left") instanceof Blob ? "left" : "right"];
     for (const key of imageOrder) {
       const value = form.get(key);
       if (value instanceof Blob && value.size > 0) {
@@ -238,20 +238,27 @@ export async function POST(request: Request) {
         input.push(await blobToOpenAIImage(value, "high"));
       }
     }
-    for (let index = 0; index < 8; index += 1) {
+    for (let index = 0; index < 3; index += 1) {
       const value = form.get(`reference_${index}`);
       if (!(value instanceof Blob) || value.size === 0) continue;
       input.push({ type: "input_text", text: `AESTHETIC_REFERENCE_${index + 1}（审美参考图${index + 1}；判断是否采纳并说明依据，不得复制此人的脸）` });
       input.push(await blobToOpenAIImage(value, "low"));
     }
 
-    const plan = await createStructuredPlan(SYSTEM_INSTRUCTION, input, PLAN_SCHEMA as unknown as Record<string, unknown>);
-    if (!Array.isArray(plan.phases) || plan.phases.length < 3) throw new Error("INCOMPLETE_PLAN_PHASES");
-    if (!Array.isArray(plan.visualScenarios) || plan.visualScenarios.length !== 3) throw new Error("INCOMPLETE_VISUAL_SCENARIOS");
-    if (typeof plan.headline !== "string" || !plan.headline.trim()) throw new Error("INCOMPLETE_PLAN_HEADLINE");
-    plan.generatedBy = OPENAI_PLAN_MODEL;
-    plan.generatedAt = new Date().toISOString();
-    return Response.json(plan, { headers: { "Cache-Control": "no-store" } });
+    return streamJsonTask(async () => {
+      const plan = await createStructuredPlan(
+        SYSTEM_INSTRUCTION,
+        input,
+        PLAN_SCHEMA as unknown as Record<string, unknown>,
+        { maxOutputTokens: 14000, reasoningEffort: "low", verbosity: "low" },
+      );
+      if (!Array.isArray(plan.phases) || plan.phases.length < 3) throw new Error("INCOMPLETE_PLAN_PHASES");
+      if (!Array.isArray(plan.visualScenarios) || plan.visualScenarios.length !== 3) throw new Error("INCOMPLETE_VISUAL_SCENARIOS");
+      if (typeof plan.headline !== "string" || !plan.headline.trim()) throw new Error("INCOMPLETE_PLAN_HEADLINE");
+      plan.generatedBy = OPENAI_PLAN_MODEL;
+      plan.generatedAt = new Date().toISOString();
+      return plan;
+    });
   } catch (error) {
     return apiError(error);
   }

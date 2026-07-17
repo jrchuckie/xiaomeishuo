@@ -1,4 +1,4 @@
-import { apiError, readJsonField } from "../_lib/common";
+import { apiError, readJsonField, streamJsonTask } from "../_lib/common";
 import { generateSeedreamImage } from "../_lib/seedream";
 
 export const runtime = "nodejs";
@@ -93,17 +93,16 @@ export async function POST(request: Request) {
       const reference = form.get(`identity_${index}`);
       if (reference instanceof Blob && reference.size > 0) identityReferences.push(reference);
     }
-    const result = await generateSeedreamImage(
-      simulationPrompt(context, identityReferences.length, await imageAspectRatio(target)),
-      [target, ...identityReferences],
-    );
-
-    return Response.json({
-      image: result.image,
-      model: result.model,
-      generatedAt: new Date().toISOString(),
-      assumptions: stringList(context.changes, 6),
-    }, { headers: { "Cache-Control": "no-store" } });
+    const prompt = simulationPrompt(context, identityReferences.length, await imageAspectRatio(target));
+    return streamJsonTask(async () => {
+      const result = await generateSeedreamImage(prompt, [target, ...identityReferences]);
+      return {
+        image: result.image,
+        model: result.model,
+        generatedAt: new Date().toISOString(),
+        assumptions: stringList(context.changes, 6),
+      };
+    });
   } catch (error) {
     return apiError(error);
   }

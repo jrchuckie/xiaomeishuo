@@ -1,4 +1,4 @@
-const CACHE = "xiaomeishuo-shell-v5";
+const CACHE = "xiaomeishuo-shell-v6";
 const SHELL = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {

@@ -932,7 +932,7 @@ function App() {
             <div className="medical-boundary"><CircleAlert size={20} /><p><strong>方案先分析，再生成图。</strong><br />系统会先结合治疗史判断哪些变化仍然合理，避免把已做过的区域再次机械叠加。</p></div>
             {planError && <div className="ai-error"><CircleAlert size={17} /><span>{planError}</span></div>}
             <button className="primary-button" type="button" onClick={() => void finishDirection()} disabled={generatingPlan}>
-              {generatingPlan ? <><LoaderCircle className="spin" size={19} /> 正在分析正侧脸与治疗史</> : <>生成完整个性化方案 <ArrowRight size={19} /></>}
+              {generatingPlan ? <><LoaderCircle className="spin" size={19} /> 正在生成完整方案，请保持页面开启</> : <>生成完整个性化方案 <ArrowRight size={19} /></>}
             </button>
           </section>
         )}

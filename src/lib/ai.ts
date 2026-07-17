@@ -11,9 +11,19 @@ import type {
 } from "../types";
 import { resizeImageBlob } from "./image";
 
-async function apiFailure(response: Response) {
-  const body = await response.json().catch(() => ({})) as { error?: string };
-  throw new Error(body.error || `AI 服务返回 ${response.status}`);
+async function postFormJson<T>(endpoint: string, form: FormData) {
+  let response: Response;
+  try {
+    response = await fetch(endpoint, { method: "POST", body: form });
+  } catch {
+    throw new Error("网络连接中断。照片和当前选择已保存，请保持页面开启后重试。");
+  }
+
+  const body = await response.json().catch(() => null) as (T & { error?: string }) | null;
+  if (!response.ok) throw new Error(body?.error || `AI 服务返回 ${response.status}`);
+  if (!body) throw new Error("AI 返回内容没有完整送达，请重试。");
+  if (body.error) throw new Error(body.error);
+  return body as T;
 }
 
 function compactProfile(profile: AestheticProfile) {
@@ -55,10 +65,8 @@ export async function generateAestheticProfileWithAI(input: {
   }
 
   input.onProgress?.("OpenAI 正在提炼审美共性与不真实样本", 0.38);
-  const response = await fetch("/api/ai/aesthetic", { method: "POST", body: form });
-  if (!response.ok) await apiFailure(response);
+  const profile = await postFormJson<AestheticProfile>("/api/ai/aesthetic", form);
   input.onProgress?.("正在整理五官、肤色、眉形与发型偏好", 0.9);
-  const profile = await response.json() as AestheticProfile;
   const evidence = profile.evidence.map((item) => {
     const source = selected.find((image) => image.id === item.sourceId)
       ?? selected.find((image) => image.name === item.sourceName);
@@ -90,22 +98,24 @@ export async function generatePersonalPlanWithAI(input: {
     preferences: input.preferences,
     selectedDirections: input.selections,
   }));
-  const compactCaptures = await Promise.all(input.captures.map(async (capture) => ({
+  const primaryCaptures = [
+    input.captures.find((capture) => capture.kind === "front"),
+    input.captures.find((capture) => capture.kind === "left") ?? input.captures.find((capture) => capture.kind === "right"),
+  ].filter((capture): capture is FaceCapture => Boolean(capture));
+  const compactCaptures = await Promise.all(primaryCaptures.map(async (capture) => ({
     capture,
-    blob: await resizeImageBlob(capture.blob, 1280, 0.78),
+    blob: await resizeImageBlob(capture.blob, 1024, 0.72),
   })));
-  const compactReferences = await Promise.all(input.references.slice(0, 6).map(async (reference) => ({
+  const compactReferences = await Promise.all(input.references.slice(0, 3).map(async (reference) => ({
     reference,
-    blob: await resizeImageBlob(reference.blob, 1024, 0.74),
+    blob: await resizeImageBlob(reference.blob, 768, 0.68),
   })));
   compactCaptures.forEach(({ capture, blob }) => form.set(capture.kind, blob, capture.name));
   compactReferences.forEach(({ reference, blob }, index) => {
     form.set(`reference_${index}`, blob, reference.name);
   });
 
-  const response = await fetch("/api/ai/plan", { method: "POST", body: form });
-  if (!response.ok) await apiFailure(response);
-  return await response.json() as PersonalPlan;
+  return await postFormJson<PersonalPlan>("/api/ai/plan", form);
 }
 
 async function dataUrlToBlob(dataUrl: string) {
@@ -144,14 +154,12 @@ export async function generateSimulationWithAI(input: {
     form.set(`identity_${index}`, blob, reference.name);
   });
 
-  const response = await fetch("/api/ai/simulate", { method: "POST", body: form });
-  if (!response.ok) await apiFailure(response);
-  const result = await response.json() as {
+  const result = await postFormJson<{
     image: string;
     model: string;
     generatedAt: string;
     assumptions: string[];
-  };
+  }>("/api/ai/simulate", form);
   return {
     id: crypto.randomUUID(),
     stageId: input.scenario.id,

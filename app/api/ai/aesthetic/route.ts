@@ -1,4 +1,4 @@
-import { apiError, readJsonField } from "../_lib/common";
+import { apiError, readJsonField, streamJsonTask } from "../_lib/common";
 import { blobToOpenAIImage, createStructuredPlan, OPENAI_PLAN_MODEL, type OpenAIContentPart } from "../_lib/openai";
 
 export const runtime = "nodejs";
@@ -114,58 +114,60 @@ export async function POST(request: Request) {
       content.push(await blobToOpenAIImage(value, "low"));
     }
 
-    const result = await createStructuredPlan(
-      SYSTEM_INSTRUCTION,
-      content,
-      AESTHETIC_SCHEMA as unknown as Record<string, unknown>,
-      {
-        formatName: "xiaomeishuo_aesthetic_profile",
-        formatDescription: "Evidence-grounded personal aesthetic profile inferred from the user's own reference images.",
-        maxOutputTokens: 7000,
-        reasoningEffort: "low",
-        verbosity: "low",
-      },
-    );
+    return streamJsonTask(async () => {
+      const result = await createStructuredPlan(
+        SYSTEM_INSTRUCTION,
+        content,
+        AESTHETIC_SCHEMA as unknown as Record<string, unknown>,
+        {
+          formatName: "xiaomeishuo_aesthetic_profile",
+          formatDescription: "Evidence-grounded personal aesthetic profile inferred from the user's own reference images.",
+          maxOutputTokens: 7000,
+          reasoningEffort: "low",
+          verbosity: "low",
+        },
+      );
 
-    const evidence = Array.isArray(result.evidence) ? result.evidence.map((item) => {
-      const entry = item as Record<string, unknown>;
-      const referenceIndex = Number(entry.referenceIndex || 0);
-      const reference = references[referenceIndex - 1];
+      const evidence = Array.isArray(result.evidence) ? result.evidence.map((item) => {
+        const entry = item as Record<string, unknown>;
+        const referenceIndex = Number(entry.referenceIndex || 0);
+        const reference = references[referenceIndex - 1];
+        return {
+          sourceId: reference?.id || `reference-${referenceIndex}`,
+          sourceName: reference?.name || `参考图 ${referenceIndex}`,
+          dominantStyle: String(entry.dominantStyle || "信息不足"),
+          trust: entry.trust,
+          trustScore: entry.trustScore,
+          reason: String(entry.reason || "需要人工核对来源"),
+        };
+      }) : [];
+      const styles = Array.isArray(result.styles) ? result.styles.map((item) => {
+        const entry = item as Record<string, unknown>;
+        const key = String(entry.key || "natural");
+        return { key, label: STYLE_NAMES[key] || key, score: Number(entry.score || 0) };
+      }) : [];
+      const features = Array.isArray(result.features) ? result.features.map((item) => {
+        const entry = item as Record<string, unknown>;
+        const key = String(entry.key || "face");
+        return { ...entry, key, label: FEATURE_NAMES[key] || key };
+      }) : [];
+      const usableCount = evidence.filter((item) => item.trust !== "疑似合成" && item.trust !== "疑似重修").length;
+
       return {
-        sourceId: reference?.id || `reference-${referenceIndex}`,
-        sourceName: reference?.name || `参考图 ${referenceIndex}`,
-        dominantStyle: String(entry.dominantStyle || "信息不足"),
-        trust: entry.trust,
-        trustScore: entry.trustScore,
-        reason: String(entry.reason || "需要人工核对来源"),
+        styles,
+        evidence,
+        features,
+        naturality: result.naturality,
+        sharpness: result.sharpness,
+        warmth: result.warmth,
+        confidence: result.confidence,
+        sourceCount: references.length,
+        usableCount,
+        localModel: false,
+        generatedBy: OPENAI_PLAN_MODEL,
+        generatedAt: new Date().toISOString(),
       };
-    }) : [];
-    const styles = Array.isArray(result.styles) ? result.styles.map((item) => {
-      const entry = item as Record<string, unknown>;
-      const key = String(entry.key || "natural");
-      return { key, label: STYLE_NAMES[key] || key, score: Number(entry.score || 0) };
-    }) : [];
-    const features = Array.isArray(result.features) ? result.features.map((item) => {
-      const entry = item as Record<string, unknown>;
-      const key = String(entry.key || "face");
-      return { ...entry, key, label: FEATURE_NAMES[key] || key };
-    }) : [];
-    const usableCount = evidence.filter((item) => item.trust !== "疑似合成" && item.trust !== "疑似重修").length;
-
-    return Response.json({
-      styles,
-      evidence,
-      features,
-      naturality: result.naturality,
-      sharpness: result.sharpness,
-      warmth: result.warmth,
-      confidence: result.confidence,
-      sourceCount: references.length,
-      usableCount,
-      localModel: false,
-      generatedBy: OPENAI_PLAN_MODEL,
-      generatedAt: new Date().toISOString(),
-    }, { headers: { "Cache-Control": "no-store" } });
+    });
   } catch (error) {
     return apiError(error);
   }
