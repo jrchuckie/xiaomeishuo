@@ -1,3745 +1,659 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="小美说 Project Darwin Business Proposal：从个人审美理解到变美决策与医生匹配">
-  <title>小美说｜Project Darwin Business Proposal</title>
-  <style>
-    :root {
-      --paper: #f4f4f2;
-      --surface: #ffffff;
-      --ink: #171719;
-      --ink-soft: #52525a;
-      --muted: #7b7b83;
-      --line: #dedee2;
-      --line-strong: #b8b8bf;
-      --red: #ff2442;
-      --red-soft: #fff0f3;
-      --blue: #315efb;
-      --blue-soft: #edf1ff;
-      --green: #087c65;
-      --green-soft: #e5f6f1;
-      --yellow: #f0b429;
-      --yellow-soft: #fff6dc;
-      --black: #111113;
-      --max: 1280px;
-      --radius: 6px;
-    }
-
-    * { box-sizing: border-box; }
-
-    html {
-      scroll-behavior: smooth;
-      scroll-padding-top: 60px;
-      scroll-snap-type: y mandatory;
-      background: var(--paper);
-    }
-
-    body {
-      margin: 0;
-      color: var(--ink);
-      background: var(--paper);
-      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
-      line-height: 1.62;
-      letter-spacing: 0;
-    }
-
-    a { color: inherit; }
-
-    img {
-      display: block;
-      max-width: 100%;
-    }
-
-    h1,
-    h2,
-    h3,
-    p { margin-top: 0; }
-
-    h1,
-    h2,
-    h3 { text-wrap: balance; }
-
-    p,
-    li { text-wrap: pretty; }
-
-    h2 {
-      max-width: 900px;
-      margin-bottom: 18px;
-      font-size: clamp(34px, 4.8vw, 64px);
-      line-height: 1.08;
-    }
-
-    .semantic-title {
-      max-width: none;
-      text-wrap: wrap;
-    }
-
-    .title-line,
-    .copy-line {
-      display: block;
-      width: max-content;
-      max-width: 100%;
-      white-space: nowrap;
-    }
-
-    br.compact-break { display: none; }
-
-    h3 {
-      margin-bottom: 8px;
-      font-size: 20px;
-      line-height: 1.3;
-    }
-
-    .page {
-      width: 100%;
-      margin: 0;
-      background: var(--surface);
-      box-shadow: none;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      min-height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 clamp(20px, 4vw, 58px);
-      color: #fff;
-      background: rgba(17, 17, 19, 0.96);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-      backdrop-filter: blur(12px);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 760;
-      white-space: nowrap;
-    }
-
-    .brand-mark {
-      width: 13px;
-      height: 13px;
-      background: var(--red);
-      border-radius: 50%;
-      box-shadow: 9px 0 0 #fff;
-    }
-
-    .topbar nav {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .topbar nav a {
-      color: rgba(255, 255, 255, 0.72);
-      font-size: 13px;
-      text-decoration: none;
-    }
-
-    .topbar nav a:hover { color: #fff; }
-
-    .internal {
-      padding: 5px 8px;
-      border: 1px solid rgba(255, 255, 255, 0.26);
-      border-radius: 4px;
-      font-size: 11px;
-      line-height: 1;
-    }
-
-    .hero {
-      position: relative;
-      height: calc(100svh - 60px);
-      min-height: 650px;
-      max-height: none;
-      overflow: hidden;
-      color: #fff;
-      background: var(--black);
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
-    }
-
-    .hero-scenes {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-    }
-
-    .hero-scenes::after {
-      position: absolute;
-      inset: 0;
-      content: "";
-      background: rgba(0, 0, 0, 0.67);
-    }
-
-    .hero-screen {
-      position: absolute;
-      width: clamp(220px, 24vw, 330px);
-      height: auto;
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
-    }
-
-    .hero-screen.one {
-      top: 2%;
-      left: 7%;
-      transform: rotate(-8deg);
-    }
-
-    .hero-screen.two {
-      top: -8%;
-      left: 42%;
-      transform: rotate(3deg);
-    }
-
-    .hero-screen.three {
-      top: 5%;
-      right: 4%;
-      transform: rotate(9deg);
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      width: min(100% - 40px, var(--max));
-      height: 100%;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 42px 0 36px;
-    }
-
-    .eyebrow {
-      margin-bottom: 18px;
-      color: #ff6b80;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .hero h1 {
-      margin-bottom: 14px;
-      font-size: clamp(60px, 9vw, 126px);
-      line-height: 0.95;
-    }
-
-    .hero-hook {
-      max-width: 950px;
-      margin-bottom: 18px;
-      font-size: clamp(28px, 4.6vw, 58px);
-      font-weight: 760;
-      line-height: 1.14;
-    }
-
-    .hero-hook em {
-      color: var(--red);
-      font-style: normal;
-    }
-
-    .hero-hook .hero-gold-line {
-      font-size: clamp(26px, 4vw, 52px);
-      white-space: nowrap;
-    }
-
-    .hero-hook .title-line { max-width: 100%; }
-
-    .hero-lead {
-      max-width: 830px;
-      margin-bottom: 28px;
-      color: rgba(255, 255, 255, 0.83);
-      font-size: clamp(16px, 1.8vw, 22px);
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .action {
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 18px;
-      border-radius: 4px;
-      font-size: 14px;
-      font-weight: 750;
-      text-decoration: none;
-    }
-
-    .action.primary {
-      color: #fff;
-      background: var(--red);
-    }
-
-    .action.secondary {
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.44);
-      background: rgba(0, 0, 0, 0.24);
-    }
-
-    .hero-facts {
-      position: absolute;
-      z-index: 3;
-      right: max(20px, calc((100% - var(--max)) / 2));
-      bottom: 28px;
-      display: grid;
-      grid-template-columns: repeat(4, minmax(90px, 1fr));
-      gap: 1px;
-      background: rgba(255, 255, 255, 0.22);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-
-    .hero-fact {
-      min-width: 118px;
-      padding: 12px 14px;
-      background: rgba(17, 17, 19, 0.88);
-    }
-
-    .hero-fact strong {
-      display: block;
-      color: #fff;
-      font-size: 19px;
-      line-height: 1.1;
-    }
-
-    .hero-fact span {
-      color: rgba(255, 255, 255, 0.58);
-      font-size: 11px;
-    }
-
-    .section {
-      min-height: calc(100svh - 60px);
-      display: flex;
-      align-items: center;
-      padding: clamp(64px, 8vw, 112px) clamp(24px, 6vw, 86px);
-      border-top: 1px solid var(--line);
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
-    }
-
-    .section-inner {
-      width: min(100%, var(--max));
-      margin: 0 auto;
-    }
-
-    .section-kicker {
-      margin-bottom: 12px;
-      color: var(--red);
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .section-intro {
-      max-width: 920px;
-      margin-bottom: 38px;
-      color: var(--ink-soft);
-      font-size: clamp(17px, 1.65vw, 22px);
-    }
-
-    .section-intro.semantic-copy { max-width: none; }
-
-    .opening-tension {
-      color: var(--ink);
-      background: #fff;
-    }
-
-    .opening-tension .section-inner {
-      display: block;
-    }
-
-    .opening-thesis {
-      margin-bottom: clamp(30px, 4vw, 48px);
-    }
-
-    .opening-thesis h2 {
-      max-width: none;
-      margin-bottom: 24px;
-      font-size: clamp(42px, 5.3vw, 74px);
-    }
-
-    .opening-thesis p {
-      max-width: 620px;
-      margin: 0;
-      color: var(--ink-soft);
-      font-size: clamp(17px, 1.55vw, 21px);
-    }
-
-    .opening-questions {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      border: 1px solid var(--line-strong);
-      background: var(--line);
-    }
-
-    .opening-question {
-      min-height: 196px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: clamp(22px, 2.3vw, 32px);
-      background: #fff;
-    }
-
-    .opening-question span {
-      color: var(--red);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .opening-question strong {
-      max-width: 16em;
-      font-size: clamp(20px, 2vw, 28px);
-      line-height: 1.35;
-    }
-
-    .opening-question:last-child {
-      color: #fff;
-      background: var(--red);
-    }
-
-    .opening-question:last-child span { color: rgba(255, 255, 255, 0.72); }
-
-    .opening-answer {
-      grid-column: 1 / -1;
-      margin: 0;
-      padding: 18px 22px;
-      color: #fff;
-      background: var(--black);
-      font-size: clamp(15px, 1.35vw, 18px);
-      font-weight: 680;
-    }
-
-    .executive-section {
-      padding-top: clamp(44px, 5vw, 64px);
-      padding-bottom: clamp(44px, 5vw, 64px);
-      background: #f7f7f5;
-    }
-
-    .executive-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
-      gap: clamp(28px, 4vw, 58px);
-      align-items: center;
-    }
-
-    .executive-body {
-      display: grid;
-      grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
-      gap: 24px;
-      align-items: stretch;
-    }
-
-    .executive-copy h2 {
-      max-width: 1080px;
-      margin-bottom: 12px;
-      font-size: clamp(38px, 4.2vw, 56px);
-    }
-
-    .value-proposition {
-      max-width: 1180px;
-      margin: 0 0 22px;
-      padding: 0 0 0 22px;
-      border-left: 4px solid var(--red);
-      font-size: clamp(16px, 1.35vw, 20px);
-      font-weight: 680;
-      line-height: 1.46;
-    }
-
-    .value-map {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 0;
-      border: 1px solid var(--line-strong);
-      background: var(--line);
-    }
-
-    .value-row {
-      min-height: 104px;
-      padding: 13px 16px;
-      background: #fff;
-    }
-
-    .value-row span {
-      display: block;
-      margin-bottom: 5px;
-      color: var(--red);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .value-row p {
-      margin: 0;
-      color: var(--ink-soft);
-      font-size: 11.5px;
-      line-height: 1.45;
-    }
-
-    .value-row strong {
-      display: block;
-      margin-bottom: 2px;
-      color: var(--ink);
-      font-size: 14px;
-      line-height: 1.35;
-    }
-
-    .executive-demo {
-      margin: 0;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      background: #fff;
-      border: 1px solid var(--line-strong);
-    }
-
-    .executive-demo img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-height: 0;
-      max-height: min(52vh, 520px);
-      object-fit: contain;
-    }
-
-    .executive-demo figcaption {
-      margin-bottom: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .executive-demo figcaption strong {
-      display: block;
-      font-size: 18px;
-      line-height: 1.35;
-    }
-
-    .executive-demo-flow {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 14px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .executive-demo-flow span {
-      min-height: 66px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 10px 9px;
-      color: var(--ink);
-      background: #f7f7f8;
-      font-size: 12px;
-      font-weight: 800;
-      line-height: 1.25;
-    }
-
-    .executive-demo-flow b {
-      display: block;
-      margin-bottom: 5px;
-      color: var(--red);
-      font-size: 9px;
-    }
-
-    .agenda-section { background: #fff; }
-
-    .agenda-heading {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 24px;
-      margin-bottom: 14px;
-      padding-top: 18px;
-      border-top: 1px solid var(--line-strong);
-    }
-
-    .agenda-heading span {
-      color: var(--red);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .agenda-heading strong {
-      color: var(--ink-soft);
-      font-size: 14px;
-    }
-
-    .agenda-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      border: 1px solid var(--line-strong);
-      background: var(--line);
-      gap: 1px;
-    }
-
-    .agenda-item {
-      min-height: 126px;
-      padding: 20px;
-      color: var(--ink);
-      background: #fff;
-      text-decoration: none;
-    }
-
-    .agenda-item:hover { background: var(--red-soft); }
-
-    .agenda-item span {
-      display: block;
-      margin-bottom: 14px;
-      color: var(--red);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .agenda-item strong {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 18px;
-    }
-
-    .agenda-item p {
-      margin: 0;
-      color: var(--ink-soft);
-      font-size: 12px;
-    }
-
-    .dark-section {
-      color: #fff;
-      background: var(--black);
-      border-top-color: #2a2a2d;
-    }
-
-    .dark-section .section-intro { color: rgba(255, 255, 255, 0.66); }
-
-    .persona-layout {
-      display: grid;
-      grid-template-columns: 1.12fr 0.88fr;
-      gap: 34px;
-      align-items: stretch;
-      margin-bottom: 42px;
-    }
-
-    .persona-card {
-      display: grid;
-      grid-template-columns: minmax(190px, 0.7fr) minmax(0, 1.3fr);
-      min-height: 390px;
-      color: #fff;
-      background: var(--black);
-    }
-
-    .persona-card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: 50% 30%;
-      filter: saturate(0.82) contrast(1.02);
-    }
-
-    .persona-copy {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 30px;
-    }
-
-    .persona-label {
-      display: block;
-      margin-bottom: 16px;
-      color: #ff6b80;
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .persona-copy h3 {
-      margin-bottom: 9px;
-      font-size: clamp(28px, 3vw, 40px);
-    }
-
-    .persona-copy > p {
-      margin-bottom: 16px;
-      color: rgba(255, 255, 255, 0.64);
-      font-size: 13px;
-    }
-
-    .persona-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin: 18px 0;
-    }
-
-    .persona-tags span {
-      padding: 5px 8px;
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.26);
-      border-radius: 3px;
-      font-size: 10px;
-    }
-
-    .persona-quote {
-      margin: 0;
-      padding-top: 18px;
-      color: #fff;
-      border-top: 1px solid rgba(255, 255, 255, 0.22);
-      font-size: 19px;
-      font-weight: 760;
-      line-height: 1.4;
-    }
-
-    .persona-quote .keep-together {
-      display: inline-block;
-      white-space: nowrap;
-      word-break: keep-all;
-    }
-
-    .reverse-funnel {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 28px;
-      background: #f4f4f6;
-      border: 1px solid var(--line);
-    }
-
-    .reverse-funnel > strong {
-      margin-bottom: 20px;
-      font-size: 21px;
-    }
-
-    .audience-layer {
-      min-height: 92px;
-      padding: 16px 18px;
-      color: var(--ink);
-      background: #fff;
-      border: 1px solid var(--line);
-    }
-
-    .audience-layer + .audience-layer { border-top: 0; }
-
-    .audience-layer.core {
-      color: #fff;
-      background: var(--red);
-      border-color: var(--red);
-    }
-
-    .audience-layer span {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .audience-layer strong {
-      display: block;
-      font-size: 17px;
-    }
-
-    .audience-title-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .audience-title-row b {
-      flex: 0 0 auto;
-      color: var(--red);
-      font-size: 23px;
-      line-height: 1;
-    }
-
-    .audience-layer.core .audience-title-row b { color: #fff; }
-
-    .audience-layer p {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .audience-layer.core p { color: rgba(255, 255, 255, 0.74); }
-
-    .audience-layer small {
-      display: block;
-      margin-top: 7px;
-      color: var(--muted);
-      font-size: 9px;
-    }
-
-    .audience-layer.core small { color: rgba(255, 255, 255, 0.62); }
-
-    .audience-source {
-      margin: 11px 2px 0;
-      color: var(--muted);
-      font-size: 9px;
-    }
-
-    .journey-heading {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: end;
-      justify-content: space-between;
-      gap: 20px;
-      margin: 40px 0 12px;
-      padding-top: 18px;
-      border-top: 1px solid var(--line-strong);
-    }
-
-    .journey-heading span {
-      color: var(--red);
-      font-size: 10px;
-      font-weight: 820;
-      text-transform: uppercase;
-    }
-
-    .journey-heading strong {
-      color: var(--ink-soft);
-      font-size: 13px;
-      text-align: right;
-    }
-
-    .journey {
-      position: relative;
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 0;
-      margin-bottom: 42px;
-      border: 1px solid var(--line-strong);
-    }
-
-    .journey-step {
-      min-height: 178px;
-      padding: 22px 18px;
-      border-right: 1px solid var(--line);
-      background: #fff;
-    }
-
-    .journey-step:last-child { border-right: 0; }
-
-    .journey-step.danger {
-      color: #fff;
-      background: var(--red);
-    }
-
-    .journey-step span {
-      display: block;
-      margin-bottom: 30px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .journey-step.danger span { color: rgba(255, 255, 255, 0.74); }
-
-    .journey-step strong {
-      display: block;
-      margin-bottom: 7px;
-      font-size: 18px;
-      line-height: 1.25;
-    }
-
-    .journey-step p {
-      margin: 0;
-      color: var(--ink-soft);
-      font-size: 13px;
-    }
-
-    .journey-step.danger p { color: rgba(255, 255, 255, 0.82); }
-
-    .consumer-thesis {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      margin-top: 32px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .consumer-truth {
-      min-height: 190px;
-      padding: 24px;
-      background: #fff;
-    }
-
-    .consumer-truth:first-child {
-      color: #fff;
-      background: var(--red);
-    }
-
-    .consumer-truth span {
-      display: block;
-      margin-bottom: 16px;
-      font-size: 10px;
-      font-weight: 820;
-      opacity: 0.72;
-    }
-
-    .consumer-truth strong {
-      display: block;
-      font-size: clamp(18px, 1.85vw, 27px);
-      line-height: 1.2;
-    }
-
-    .consumer-truth p {
-      margin: 10px 0 0;
-      color: var(--ink-soft);
-      font-size: 13px;
-    }
-
-    .consumer-truth:first-child p { color: rgba(255, 255, 255, 0.76); }
-
-    .consumer-truth:last-child { grid-column: auto; }
-
-    .journey.titles-only .journey-step {
-      min-height: 126px;
-      padding: 20px 16px;
-    }
-
-    .journey.titles-only .journey-step span { margin-bottom: 20px; }
-
-    .journey.titles-only .journey-step strong {
-      margin: 0;
-      font-size: clamp(15px, 1.45vw, 20px);
-    }
-
-    .landscape-bottom.whitespace-only {
-      grid-template-columns: 1fr;
-      margin-top: 42px;
-    }
-
-    .landscape-bottom.whitespace-only .competition-chart {
-      min-height: 360px;
-    }
-
-    .supply-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 42px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .supply-card {
-      min-height: 174px;
-      padding: 20px;
-      background: #fff;
-      border-top: 4px solid var(--line-strong);
-    }
-
-    .supply-card:nth-child(1) { border-top-color: var(--red); }
-    .supply-card:nth-child(2) { border-top-color: var(--blue); }
-    .supply-card:nth-child(3) { border-top-color: var(--green); }
-    .supply-card:nth-child(4) { border-top-color: var(--yellow); }
-    .supply-card:nth-child(5) { border-top-color: #845ec2; }
-
-    .supply-card span {
-      display: block;
-      margin-bottom: 18px;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .supply-card strong { display: block; margin-bottom: 6px; }
-    .supply-card p { margin: 0; color: var(--ink-soft); font-size: 12px; }
-
-    .matrix-wrap {
-      overflow-x: auto;
-      margin-bottom: 48px;
-      border: 1px solid var(--line-strong);
-      background: #fff;
-    }
-
-    .capability-matrix {
-      width: 100%;
-      min-width: 900px;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    .capability-matrix th,
-    .capability-matrix td {
-      padding: 12px 10px;
-      border-right: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      text-align: center;
-    }
-
-    .capability-matrix th:first-child,
-    .capability-matrix td:first-child {
-      width: 230px;
-      text-align: left;
-      font-weight: 760;
-    }
-
-    .capability-matrix th {
-      color: #fff;
-      background: var(--black);
-      font-size: 11px;
-    }
-
-    .capability-matrix th:last-child,
-    .capability-matrix td:last-child {
-      color: #fff;
-      background: var(--red);
-      border-right: 0;
-      font-weight: 820;
-    }
-
-    .capability-matrix tr:last-child td { border-bottom: 0; }
-
-    .capability-matrix .yes { color: var(--green); font-weight: 900; }
-    .capability-matrix .partial { color: #a36b00; font-weight: 900; }
-    .capability-matrix .no { color: #b5b5bb; }
-    .capability-matrix td:last-child { color: #fff; }
-
-    .landscape-bottom {
-      display: grid;
-      grid-template-columns: 0.72fr 1.28fr;
-      gap: 42px;
-      align-items: start;
-    }
-
-    .white-space-copy {
-      padding-top: 26px;
-      border-top: 5px solid var(--red);
-    }
-
-    .white-space-copy strong {
-      display: block;
-      margin-bottom: 12px;
-      font-size: 28px;
-      line-height: 1.2;
-    }
-
-    .white-space-copy p { color: var(--ink-soft); }
-
-    .pain-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .pain {
-      min-height: 205px;
-      padding: 28px;
-      background: #fff;
-    }
-
-    .pain-index {
-      display: block;
-      margin-bottom: 18px;
-      color: var(--red);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .pain p {
-      margin: 0;
-      color: var(--ink-soft);
-    }
-
-    .tension {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: stretch;
-      margin-top: 32px;
-      color: #fff;
-      background: var(--black);
-    }
-
-    .tension-side { padding: 28px; }
-
-    .tension-side span {
-      display: block;
-      margin-bottom: 8px;
-      color: rgba(255, 255, 255, 0.54);
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .tension-side strong {
-      font-size: clamp(21px, 2.4vw, 32px);
-      line-height: 1.2;
-    }
-
-    .tension-gap {
-      min-width: 190px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      background: var(--red);
-      font-weight: 820;
-      text-align: center;
-    }
-
-    .choice-contrast {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 180px minmax(0, 1fr);
-      align-items: stretch;
-      margin-bottom: 38px;
-      border: 1px solid var(--line-strong);
-    }
-
-    .choice-card {
-      min-height: 260px;
-      padding: 30px;
-      background: #fff;
-    }
-
-    .choice-card.personal {
-      color: #fff;
-      background: var(--blue);
-    }
-
-    .choice-label {
-      display: block;
-      margin-bottom: 44px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .choice-card.personal .choice-label { color: rgba(255, 255, 255, 0.68); }
-
-    .choice-card strong {
-      display: block;
-      margin-bottom: 10px;
-      font-size: clamp(28px, 3vw, 42px);
-      line-height: 1.1;
-    }
-
-    .choice-card p {
-      margin: 0;
-      color: var(--ink-soft);
-    }
-
-    .choice-card.personal p { color: rgba(255, 255, 255, 0.76); }
-
-    .choice-pivot {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 22px;
-      color: #fff;
-      background: var(--red);
-      font-weight: 820;
-      text-align: center;
-    }
-
-    .choice-pivot span {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 11px;
-      opacity: 0.72;
-    }
-
-    .era-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      margin-bottom: 38px;
-      background: #3a3a3d;
-      border: 1px solid #3a3a3d;
-    }
-
-    .era {
-      min-height: 260px;
-      padding: 34px;
-      background: #1d1d20;
-    }
-
-    .era.new { background: #fff; color: var(--ink); }
-
-    .era-label {
-      display: block;
-      margin-bottom: 34px;
-      color: #ff6b80;
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .era.new .era-label { color: var(--blue); }
-
-    .era h3 { font-size: clamp(27px, 3vw, 40px); }
-
-    .era p {
-      max-width: 470px;
-      margin: 0;
-      color: rgba(255, 255, 255, 0.62);
-    }
-
-    .era.new p { color: var(--ink-soft); }
-
-    .market-strip {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr 1fr 1fr;
-      border-top: 1px solid #3a3a3d;
-      border-bottom: 1px solid #3a3a3d;
-    }
-
-    .market-lead,
-    .market-metric {
-      min-height: 150px;
-      padding: 24px;
-      border-right: 1px solid #3a3a3d;
-    }
-
-    .market-metric:last-child { border-right: 0; }
-
-    .market-lead strong {
-      display: block;
-      font-size: 23px;
-      line-height: 1.25;
-    }
-
-    .market-metric strong {
-      display: block;
-      margin-bottom: 5px;
-      color: #fff;
-      font-size: clamp(30px, 3.4vw, 47px);
-      line-height: 1;
-    }
-
-    .market-metric span {
-      display: block;
-      color: rgba(255, 255, 255, 0.62);
-      font-size: 13px;
-    }
-
-    .market-metric small {
-      display: block;
-      margin-top: 8px;
-      color: rgba(255, 255, 255, 0.38);
-      font-size: 10px;
-    }
-
-    .demand-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 34px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .demand-signal-section { background: #f7f7f5; }
-
-    .demand-signal-section .demand-grid { margin-bottom: 26px; }
-
-    .demand-evidence-gallery {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin: 26px 0 20px;
-    }
-
-    .demand-evidence {
-      margin: 0;
-      overflow: hidden;
-      background: #fff;
-      border: 1px solid var(--line-strong);
-    }
-
-    .demand-evidence img {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      display: block;
-      object-fit: cover;
-      object-position: center;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .demand-evidence figcaption {
-      min-height: 70px;
-      padding: 12px 14px 14px;
-    }
-
-    .demand-evidence figcaption strong,
-    .demand-evidence figcaption span { display: block; }
-    .demand-evidence figcaption strong { font-size: 13px; }
-    .demand-evidence figcaption span { margin-top: 4px; color: var(--muted); font-size: 10px; }
-
-    .demand-card {
-      min-height: 250px;
-      padding: 28px;
-      color: var(--ink);
-      background: #fff;
-      border-top: 5px solid var(--red);
-    }
-
-    .demand-card:nth-child(2) { border-top-color: var(--blue); }
-    .demand-card:nth-child(3) { border-top-color: var(--green); }
-
-    .demand-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 32px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .demand-card h3 { font-size: 23px; }
-
-    .demand-card p {
-      margin: 0 0 16px;
-      color: var(--ink-soft);
-      font-size: 14px;
-    }
-
-    .demand-signal {
-      display: inline-block;
-      padding: 5px 8px;
-      color: var(--blue);
-      background: var(--blue-soft);
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .demand-funnel {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      border: 1px solid var(--line-strong);
-    }
-
-    .funnel-step {
-      position: relative;
-      min-height: 132px;
-      padding: 22px;
-      color: var(--ink);
-      border-right: 1px solid var(--line);
-      background: #fff;
-    }
-
-    .funnel-step:last-child {
-      color: #fff;
-      background: var(--black);
-      border-right: 0;
-    }
-
-    .funnel-step span {
-      display: block;
-      margin-bottom: 18px;
-      color: var(--red);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .funnel-step:last-child span { color: #58d4ae; }
-    .funnel-step strong { display: block; font-size: 18px; }
-    .funnel-step p { margin: 5px 0 0; color: var(--ink-soft); font-size: 12px; }
-    .funnel-step:last-child p { color: rgba(255, 255, 255, 0.62); }
-
-    .signal-note {
-      margin-top: 20px;
-      padding-left: 16px;
-      color: var(--ink-soft);
-      border-left: 4px solid var(--yellow);
-      font-size: 12px;
-    }
-
-    .dark-section .signal-note { color: rgba(255, 255, 255, 0.68); }
-
-    .product-thesis {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      margin-bottom: 46px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .product-thesis > div {
-      min-height: 180px;
-      padding: 28px;
-      background: #fff;
-    }
-
-    .product-thesis > div:first-child {
-      color: #fff;
-      background: var(--red);
-    }
-
-    .product-thesis span {
-      display: block;
-      margin-bottom: 16px;
-      font-size: 11px;
-      font-weight: 800;
-      opacity: 0.7;
-    }
-
-    .product-thesis strong {
-      display: block;
-      font-size: clamp(24px, 3vw, 38px);
-      line-height: 1.25;
-    }
-
-    .ideal-flow {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      margin: -16px 0 46px;
-      border-top: 1px solid var(--line-strong);
-      border-bottom: 1px solid var(--line-strong);
-    }
-
-    .ideal-flow > div {
-      min-height: 154px;
-      padding: 20px;
-      border-right: 1px solid var(--line);
-    }
-
-    .ideal-flow > div:last-child { border-right: 0; }
-
-    .ideal-flow span {
-      display: block;
-      margin-bottom: 18px;
-      color: var(--red);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .ideal-flow strong { display: block; font-size: 16px; }
-    .ideal-flow p { margin: 5px 0 0; color: var(--ink-soft); font-size: 12px; }
-
-    .screens {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      align-items: start;
-      margin-bottom: 54px;
-    }
-
-    .screen-item {
-      margin: 0;
-      padding-top: 12px;
-      border-top: 4px solid var(--red);
-    }
-
-    .screen-item:nth-child(2) { border-top-color: var(--blue); }
-    .screen-item:nth-child(3) { border-top-color: var(--green); }
-    .screen-item:nth-child(4) { border-top-color: var(--yellow); }
-
-    .screens.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .screens.four .screen-item img { aspect-ratio: 390 / 600; }
-
-    .screen-item img {
-      width: 100%;
-      aspect-ratio: 391 / 844;
-      object-fit: cover;
-      object-position: top;
-      border: 1px solid var(--line);
-      background: #f3f3f3;
-    }
-
-    .screen-item figcaption { padding-top: 12px; }
-
-    .screen-item figcaption strong {
-      display: block;
-      margin-bottom: 3px;
-      font-size: 16px;
-    }
-
-    .screen-item figcaption span {
-      color: var(--ink-soft);
-      font-size: 13px;
-    }
-
-    .product-video {
-      display: grid;
-      grid-template-columns: minmax(180px, 0.28fr) minmax(0, 1fr);
-      gap: 28px;
-      align-items: center;
-      margin: 32px 0 48px;
-      padding: 22px 0;
-      border-top: 1px solid var(--line-strong);
-      border-bottom: 1px solid var(--line-strong);
-    }
-
-    .product-video-copy span {
-      display: block;
-      margin-bottom: 8px;
-      color: var(--red);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .product-video-copy strong {
-      display: block;
-      color: var(--ink);
-      font-size: clamp(20px, 2.4vw, 32px);
-      line-height: 1.25;
-    }
-
-    .product-video video {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #111113;
-      border: 1px solid var(--line-strong);
-    }
-
-    .plan-proof {
-      display: grid;
-      grid-template-columns: minmax(280px, 0.76fr) minmax(0, 1.24fr);
-      gap: 48px;
-      align-items: center;
-      padding: 42px;
-      color: #fff;
-      background: var(--black);
-    }
-
-    .plan-proof img {
-      width: min(100%, 420px);
-      margin: 0 auto;
-      border: 1px solid #3c3c40;
-    }
-
-    .plan-proof h3 {
-      margin-bottom: 24px;
-      font-size: clamp(28px, 3.2vw, 44px);
-    }
-
-    .plan-list {
-      display: grid;
-      gap: 1px;
-      background: #333338;
-      border: 1px solid #333338;
-    }
-
-    .plan-row {
-      display: grid;
-      grid-template-columns: 42px 1fr;
-      gap: 12px;
-      padding: 15px;
-      background: #1d1d20;
-    }
-
-    .plan-row span {
-      color: var(--red);
-      font-weight: 820;
-    }
-
-    .plan-row p {
-      margin: 0;
-      color: rgba(255, 255, 255, 0.68);
-      font-size: 13px;
-    }
-
-    .plan-row strong { color: #fff; }
-
-    .independent-grid {
-      display: grid;
-      grid-template-columns: 0.88fr 1.12fr;
-      gap: 52px;
-      align-items: start;
-    }
-
-    .boundary {
-      border-top: 5px solid var(--red);
-      background: var(--red-soft);
-      padding: 30px;
-    }
-
-    .boundary strong {
-      display: block;
-      margin-bottom: 12px;
-      font-size: 25px;
-      line-height: 1.24;
-    }
-
-    .boundary p {
-      margin-bottom: 18px;
-      color: var(--ink-soft);
-    }
-
-    .boundary ul {
-      padding-left: 19px;
-      margin: 0;
-    }
-
-    .boundary li { margin-bottom: 7px; }
-
-    .advantage-list {
-      border-top: 1px solid var(--line-strong);
-    }
-
-    .advantage {
-      display: grid;
-      grid-template-columns: 52px 1fr auto;
-      gap: 16px;
-      align-items: center;
-      padding: 18px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .advantage-index {
-      color: var(--red);
-      font-size: 13px;
-      font-weight: 820;
-    }
-
-    .advantage strong { display: block; }
-
-    .advantage p {
-      margin: 2px 0 0;
-      color: var(--ink-soft);
-      font-size: 13px;
-    }
-
-    .advantage-tag {
-      padding: 4px 7px;
-      color: var(--blue);
-      background: var(--blue-soft);
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    .competition {
-      margin-top: 56px;
-      padding-top: 36px;
-      border-top: 1px solid var(--line);
-    }
-
-    .competition h3 {
-      margin-bottom: 20px;
-      font-size: 28px;
-    }
-
-    .competition-chart {
-      position: relative;
-      min-height: 390px;
-      border-left: 1px solid var(--line-strong);
-      border-bottom: 1px solid var(--line-strong);
-      background-image:
-        linear-gradient(var(--line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--line) 1px, transparent 1px);
-      background-size: 25% 25%;
-    }
-
-    .white-space-zone {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 50%;
-      height: 50%;
-      display: flex;
-      align-items: flex-end;
-      justify-content: flex-start;
-      padding: 14px;
-      color: var(--red);
-      background: rgba(255, 36, 66, 0.06);
-      border: 2px dashed rgba(255, 36, 66, 0.54);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .axis-y,
-    .axis-x {
-      position: absolute;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 760;
-    }
-
-    .axis-y {
-      top: -28px;
-      left: 0;
-    }
-
-    .axis-x {
-      right: 0;
-      bottom: -29px;
-    }
-
-    .bubble {
-      position: absolute;
-      min-width: 92px;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 7px 12px;
-      color: #fff;
-      background: #777780;
-      border-radius: 50%;
-      font-size: 12px;
-      font-weight: 760;
-      text-align: center;
-    }
-
-    .bubble.qoves { left: 48%; top: 37%; }
-    .bubble.soyoung { left: 15%; top: 53%; }
-    .bubble.youcam { left: 25%; top: 68%; }
-    .bubble.realself { left: 50%; top: 62%; }
-    .bubble.xiaomei {
-      right: 7%;
-      top: 10%;
-      min-width: 150px;
-      min-height: 72px;
-      background: var(--red);
-      box-shadow: 0 12px 28px rgba(255, 36, 66, 0.28);
-      font-size: 17px;
-    }
-
-    .business-phases {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 42px;
-      background: #3a3a3d;
-      border: 1px solid #3a3a3d;
-    }
-
-    .business-phase {
-      min-height: 320px;
-      padding: 30px;
-      background: #1d1d20;
-    }
-
-    .business-phase:first-child { border-top: 5px solid var(--red); }
-    .business-phase:nth-child(2) { border-top: 5px solid #62a5ff; }
-    .business-phase:nth-child(3) { border-top: 5px solid #58d4ae; }
-
-    .business-phase .phase-number {
-      display: block;
-      margin-bottom: 12px;
-      color: #fff;
-      font-size: clamp(22px, 2.25vw, 31px);
-      font-weight: 820;
-      line-height: 1.15;
-    }
-
-    .business-phase h3 {
-      margin-bottom: 12px;
-      color: #ff6b80;
-      font-size: 13px;
-    }
-
-    .business-phase p {
-      color: rgba(255, 255, 255, 0.62);
-      font-size: 13px;
-    }
-
-    .moat-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 34px;
-    }
-
-    .moat-panel {
-      min-height: 330px;
-      padding: 30px;
-      border: 1px solid var(--line-strong);
-      border-top: 6px solid var(--blue);
-      background: #fff;
-    }
-
-    .moat-panel.product { border-top-color: var(--red); }
-
-    .moat-panel > span {
-      display: block;
-      margin-bottom: 14px;
-      color: var(--blue);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .moat-panel.product > span { color: var(--red); }
-
-    .moat-panel h3 {
-      margin-bottom: 24px;
-      font-size: clamp(25px, 2.7vw, 38px);
-    }
-
-    .moat-item {
-      display: grid;
-      grid-template-columns: 34px 1fr;
-      gap: 12px;
-      padding: 13px 0;
-      border-top: 1px solid var(--line);
-    }
-
-    .moat-item b { color: var(--red); }
-    .moat-item strong { display: block; margin-bottom: 3px; }
-    .moat-item p { margin: 0; color: var(--ink-soft); font-size: 12px; }
-
-    .moat-flywheel {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(7, auto);
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 23px;
-      color: #fff;
-      background: var(--black);
-      font-weight: 780;
-      text-align: center;
-    }
-
-    .moat-flywheel i { color: #ff6b80; font-style: normal; }
-
-    .risk-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      margin-top: 34px;
-      border: 1px solid var(--line-strong);
-      background: var(--line);
-    }
-
-    .risk-card {
-      min-height: 230px;
-      padding: 28px;
-      background: #fff;
-      border-top: 6px solid var(--red);
-    }
-
-    .risk-card:nth-child(2) { border-top-color: var(--yellow); }
-    .risk-card:nth-child(3) { border-top-color: var(--blue); }
-    .risk-card > span { color: var(--red); font-size: 11px; font-weight: 820; }
-    .risk-card:nth-child(2) > span { color: #a36b00; }
-    .risk-card:nth-child(3) > span { color: var(--blue); }
-    .risk-card h3 { margin: 18px 0 12px; font-size: clamp(22px, 2.3vw, 31px); }
-    .risk-card p { margin: 0; color: var(--ink-soft); font-size: 14px; }
-
-    .business-phase strong {
-      display: block;
-      margin-top: 20px;
-      color: #fff;
-      font-size: 14px;
-    }
-
-    .business-phase ul {
-      margin: 10px 0 0;
-      padding-left: 18px;
-      color: rgba(255, 255, 255, 0.64);
-      font-size: 12px;
-    }
-
-    .business-phase li { margin-bottom: 6px; }
-
-    .pricing-heading {
-      display: grid;
-      grid-template-columns: 1fr 0.8fr;
-      gap: 48px;
-      align-items: end;
-      margin: 48px 0 20px;
-    }
-
-    .pricing-heading span {
-      display: block;
-      margin-bottom: 8px;
-      color: #ff6b80;
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .pricing-heading h3 { margin: 0; font-size: 28px; }
-    .pricing-heading p { margin: 0; color: rgba(255, 255, 255, 0.62); font-size: 13px; }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      background: #3a3a3d;
-      border: 1px solid #3a3a3d;
-    }
-
-    .price-tier {
-      min-height: 240px;
-      padding: 24px;
-      color: var(--ink);
-      background: #fff;
-      border-top: 5px solid #777780;
-    }
-
-    .price-tier.featured { border-top-color: var(--red); background: #fff5f7; }
-
-    .price-tier > span {
-      display: block;
-      margin-bottom: 22px;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .price-tier > strong {
-      display: block;
-      color: var(--red);
-      font-size: 32px;
-      line-height: 1;
-    }
-
-    .price-tier h3 { margin: 8px 0; font-size: 18px; }
-    .price-tier p { margin: 0; color: var(--ink-soft); font-size: 12px; }
-
-    .economics-strip {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      margin: 24px 0 46px;
-      border-top: 1px solid #3a3a3d;
-      border-bottom: 1px solid #3a3a3d;
-    }
-
-    .economics-strip > div {
-      min-height: 118px;
-      padding: 18px;
-      border-right: 1px solid #3a3a3d;
-    }
-
-    .economics-strip > div:last-child { border-right: 0; }
-    .economics-strip span { display: block; color: rgba(255, 255, 255, 0.42); font-size: 9px; font-weight: 820; }
-    .economics-strip strong { display: block; margin: 7px 0 3px; font-size: 25px; }
-    .economics-strip p { margin: 0; color: rgba(255, 255, 255, 0.58); font-size: 10px; }
-
-    .flywheel {
-      display: grid;
-      grid-template-columns: repeat(11, auto);
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 34px;
-      padding: 28px;
-      border-top: 1px solid #47474b;
-      border-bottom: 1px solid #47474b;
-    }
-
-    .flywheel-step {
-      min-width: 112px;
-      padding: 14px 12px;
-      color: #fff;
-      background: #26262a;
-      border: 1px solid #46464a;
-      font-size: 12px;
-      font-weight: 760;
-      text-align: center;
-    }
-
-    .flywheel-step.accent { background: var(--red); border-color: var(--red); }
-    .flywheel-arrow { color: #ff6b80; font-weight: 900; }
-
-    .match-insight {
-      display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
-      gap: 42px;
-      align-items: center;
-    }
-
-    .subsection-heading {
-      margin: 48px 0 18px;
-      padding-top: 28px;
-      border-top: 1px solid #3a3a3d;
-    }
-
-    .subsection-heading span {
-      display: block;
-      margin-bottom: 7px;
-      color: #ff6b80;
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .subsection-heading h3 {
-      margin: 0;
-      color: #fff;
-      font-size: clamp(24px, 3vw, 38px);
-    }
-
-    .match-copy strong {
-      display: block;
-      margin-bottom: 10px;
-      font-size: clamp(27px, 3vw, 42px);
-      line-height: 1.18;
-    }
-
-    .match-copy p { color: rgba(255, 255, 255, 0.62); }
-
-    .match-example {
-      padding: 26px;
-      color: var(--ink);
-      background: #fff;
-      border-left: 5px solid var(--green);
-    }
-
-    .match-example span {
-      display: block;
-      margin-bottom: 10px;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .match-example strong {
-      display: block;
-      font-size: 22px;
-      line-height: 1.35;
-    }
-
-    .match-example small {
-      display: block;
-      margin-top: 12px;
-      color: var(--muted);
-    }
-
-    .trust-principle {
-      margin-top: 34px;
-      padding: 24px 28px;
-      color: #fff;
-      background: var(--blue);
-      font-size: clamp(20px, 2.4vw, 31px);
-      font-weight: 820;
-      line-height: 1.25;
-    }
-
-    .proof-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 46px;
-      background: #38383c;
-      border: 1px solid #38383c;
-    }
-
-    .proof {
-      min-height: 190px;
-      padding: 25px;
-      background: #1d1d20;
-    }
-
-    .proof span {
-      display: block;
-      margin-bottom: 23px;
-      color: #58d4ae;
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .proof p {
-      margin: 0;
-      color: rgba(255, 255, 255, 0.58);
-      font-size: 13px;
-    }
-
-    .validation-questions {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      margin: 0 0 30px;
-      background: #47474b;
-      border: 1px solid #47474b;
-    }
-
-    .validation-question {
-      min-height: 174px;
-      padding: 22px;
-      background: #131315;
-    }
-
-    .validation-question span {
-      display: block;
-      color: #ff6b80;
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .validation-question strong {
-      display: block;
-      margin: 15px 0 7px;
-      color: #fff;
-      font-size: 17px;
-      line-height: 1.35;
-    }
-
-    .validation-question p {
-      margin: 0;
-      color: rgba(255, 255, 255, 0.54);
-      font-size: 11px;
-    }
-
-    .research-streams {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 34px;
-    }
-
-    .research-stream {
-      min-height: 248px;
-      padding: 24px;
-      color: var(--ink);
-      background: #fff;
-      border-top: 5px solid var(--red);
-    }
-
-    .research-stream:nth-child(2) { border-top-color: var(--blue); }
-    .research-stream:nth-child(3) { border-top-color: var(--green); }
-    .research-stream > span { display: block; color: var(--muted); font-size: 9px; font-weight: 820; }
-    .research-stream h3 { margin: 8px 0 6px; font-size: 19px; }
-    .research-stream > strong { display: block; margin-bottom: 13px; color: var(--red); font-size: 12px; }
-    .research-stream:nth-child(2) > strong { color: var(--blue); }
-    .research-stream:nth-child(3) > strong { color: var(--green); }
-    .research-stream p { margin: 0 0 8px; color: var(--ink-soft); font-size: 11px; }
-    .research-stream ul { margin: 0; padding-left: 17px; color: var(--muted); font-size: 10px; }
-    .research-stream li + li { margin-top: 6px; }
-
-    .pre-demo {
-      display: grid;
-      grid-template-columns: 0.72fr 1.28fr;
-      gap: 1px;
-      margin: 0 0 40px;
-      color: var(--ink);
-      background: #d8d8dc;
-      border: 1px solid #d8d8dc;
-    }
-
-    .pre-demo-lead {
-      padding: 30px;
-      background: var(--red);
-      color: #fff;
-    }
-
-    .pre-demo-lead span,
-    .next-ask span {
-      display: block;
-      margin-bottom: 12px;
-      font-size: 10px;
-      font-weight: 820;
-      text-transform: uppercase;
-    }
-
-    .pre-demo-lead strong {
-      display: block;
-      font-size: clamp(40px, 5vw, 68px);
-      line-height: 0.95;
-    }
-
-    .pre-demo-lead p {
-      margin: 18px 0 0;
-      color: rgba(255, 255, 255, 0.82);
-      font-size: 13px;
-    }
-
-    .pre-demo-body {
-      padding: 28px 30px;
-      background: #fff;
-    }
-
-    .pre-demo-body h3 {
-      margin-bottom: 18px;
-      color: var(--ink);
-      font-size: 21px;
-    }
-
-    .pre-demo-metrics {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .pre-demo-metric {
-      min-height: 92px;
-      padding: 15px;
-      background: #f7f7f8;
-    }
-
-    .pre-demo-metric strong {
-      display: block;
-      color: var(--red);
-      font-size: 24px;
-    }
-
-    .pre-demo-metric span {
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .pre-demo-rule {
-      margin: 16px 0 0;
-      color: var(--ink-soft);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .roadmap {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0;
-      border-top: 1px solid #47474b;
-      border-bottom: 1px solid #47474b;
-    }
-
-    .phase {
-      min-height: 250px;
-      padding: 26px 20px;
-      border-right: 1px solid #47474b;
-    }
-
-    .phase:last-child { border-right: 0; }
-
-    .six-week-roadmap {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      margin-bottom: 34px;
-    }
-
-    .six-week-roadmap .phase {
-      min-height: 230px;
-      padding: 24px 17px;
-    }
-
-    .phase-time {
-      display: block;
-      margin-bottom: 30px;
-      color: #ff6b80;
-      font-size: 12px;
-      font-weight: 820;
-    }
-
-    .phase p {
-      color: rgba(255, 255, 255, 0.58);
-      font-size: 13px;
-    }
-
-    .gate {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 4px 7px;
-      color: #fff;
-      background: #333338;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    .gate.red { background: var(--red); }
-
-    .investment-layout {
-      display: grid;
-      grid-template-columns: 0.85fr 1.15fr;
-      gap: 58px;
-      align-items: start;
-    }
-
-    .ask-amount {
-      display: block;
-      color: var(--red);
-      font-size: clamp(70px, 8vw, 116px);
-      font-weight: 820;
-      line-height: 0.92;
-    }
-
-    .ask-period {
-      display: block;
-      margin: 12px 0 26px;
-      color: var(--ink-soft);
-      font-size: 18px;
-    }
-
-    .next-ask {
-      margin: 26px 0;
-      padding: 20px;
-      color: #fff;
-      background: var(--ink);
-      border-left: 6px solid var(--blue);
-    }
-
-    .next-ask span { color: #8fc5f5; }
-
-    .next-ask strong {
-      display: block;
-      font-size: 24px;
-      line-height: 1.25;
-    }
-
-    .cold-budget {
-      margin-bottom: 28px;
-      border: 1px solid var(--line);
-      background: #fff;
-    }
-
-    .cold-budget-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 16px;
-      color: #fff;
-      background: var(--blue-dark);
-    }
-
-    .cold-budget-head strong { font-size: 16px; }
-    .cold-budget-head span { font-size: 11px; opacity: 0.72; }
-
-    .cold-budget-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 18px;
-      padding: 10px 16px;
-      color: var(--ink);
-      border-bottom: 1px solid var(--line);
-      font-size: 12px;
-    }
-
-    .cold-budget-row:last-child { border-bottom: 0; }
-
-    .cold-budget-note {
-      display: block;
-      padding: 10px 16px 12px;
-      color: var(--muted);
-      background: #f7f7f8;
-      font-size: 10px;
-    }
-
-    .phase1-layout {
-      display: grid;
-      grid-template-columns: 0.88fr 1.12fr;
-      gap: 48px;
-      align-items: start;
-      margin-bottom: 42px;
-    }
-
-    .gantt-heading {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 28px;
-      margin: 34px 0 16px;
-      padding-top: 28px;
-      border-top: 1px solid var(--line-strong);
-    }
-
-    .gantt-heading span {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--red);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .gantt-heading h3 { margin: 0; font-size: clamp(24px, 2.8vw, 36px); }
-    .gantt-heading p { max-width: 470px; margin: 0; color: var(--ink-soft); font-size: 12px; }
-
-    .release-roadmap {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 18px;
-      background: var(--line);
-      border: 1px solid var(--line-strong);
-    }
-
-    .release-stage {
-      min-height: 230px;
-      padding: 18px;
-      background: #fff;
-      border-top: 5px solid var(--stage-color, var(--red));
-    }
-
-    .release-stage > span {
-      display: block;
-      color: var(--stage-color, var(--red));
-      font-size: 9px;
-      font-weight: 820;
-    }
-
-    .release-stage h4 { margin: 7px 0 5px; font-size: 19px; }
-    .release-stage > p { min-height: 34px; margin: 0 0 12px; color: var(--muted); font-size: 10px; }
-    .release-stage ul { margin: 0; padding-left: 16px; color: var(--ink-soft); font-size: 10px; }
-    .release-stage li + li { margin-top: 5px; }
-
-    .release-stage > .release-gate {
-      display: inline-block;
-      margin-top: 14px;
-      padding: 5px 7px;
-      color: #fff;
-      background: var(--stage-color, var(--red));
-      font-size: 9px;
-      font-weight: 800;
-    }
-
-    .gantt-wrap {
-      margin-bottom: 44px;
-      overflow-x: auto;
-      border: 1px solid var(--line-strong);
-      background: #fff;
-    }
-
-    .gantt {
-      min-width: 980px;
-      display: grid;
-      gap: 1px;
-      background: var(--line);
-    }
-
-    .gantt-phases,
-    .gantt-months,
-    .gantt-row {
-      display: grid;
-      grid-template-columns: 190px repeat(12, minmax(54px, 1fr));
-      gap: 1px;
-      background: var(--line);
-    }
-
-    .gantt-phases > span,
-    .gantt-phases > strong {
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      padding: 0 12px;
-      font-size: 9px;
-      font-weight: 820;
-    }
-
-    .gantt-phases > span {
-      color: #fff;
-      background: var(--black);
-    }
-
-    .gantt-phases > strong {
-      justify-content: center;
-      color: var(--ink);
-      background: var(--phase-bg, #f4f4f6);
-      border-top: 5px solid var(--phase-color, var(--red));
-      text-align: center;
-    }
-
-    .gantt-months > span,
-    .gantt-row > span,
-    .gantt-track {
-      min-height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #fff;
-      font-size: 9px;
-    }
-
-    .gantt-months > span:first-child {
-      justify-content: flex-start;
-      padding-left: 16px;
-      color: #fff;
-      background: var(--black);
-      font-weight: 820;
-    }
-
-    .gantt-months > span:not(:first-child) {
-      color: var(--muted);
-      background: #f4f4f6;
-      font-weight: 760;
-    }
-
-    .gantt-row > strong {
-      min-height: 54px;
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      background: #fff;
-      font-size: 12px;
-    }
-
-    .gantt-track {
-      position: relative;
-      min-height: 54px;
-      grid-column: 2 / 14;
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      background: repeating-linear-gradient(to right, #fff 0 calc(8.333% - 1px), var(--line) calc(8.333% - 1px) 8.333%);
-    }
-
-    .gantt-bar {
-      z-index: 1;
-      align-self: center;
-      min-height: 25px;
-      display: flex;
-      align-items: center;
-      padding: 0 9px;
-      color: #fff;
-      background: var(--bar-color, var(--red));
-      font-size: 9px;
-      font-weight: 760;
-      white-space: nowrap;
-    }
-
-    .gantt-milestones {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--line);
-    }
-
-    .gantt-milestones > div {
-      min-height: 76px;
-      padding: 13px 16px;
-      background: var(--black);
-    }
-
-    .gantt-milestones span { display: block; color: #ff6b80; font-size: 9px; font-weight: 820; }
-    .gantt-milestones strong { display: block; margin-top: 4px; color: #fff; font-size: 13px; }
-
-    .cost-envelope {
-      padding: 30px;
-      color: #fff;
-      background: var(--black);
-      border-top: 6px solid var(--red);
-    }
-
-    .cost-envelope span {
-      display: block;
-      margin-bottom: 13px;
-      color: #ff6b80;
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .cost-envelope strong {
-      display: block;
-      font-size: clamp(48px, 5.5vw, 76px);
-      line-height: 0.95;
-    }
-
-    .cost-envelope p {
-      margin: 18px 0 0;
-      color: rgba(255, 255, 255, 0.64);
-      font-size: 13px;
-    }
-
-    .cost-table {
-      border-top: 1px solid var(--line-strong);
-    }
-
-    .funding-bar {
-      height: 34px;
-      display: flex;
-      margin-bottom: 22px;
-      overflow: hidden;
-      background: #ececef;
-      border: 1px solid var(--line-strong);
-    }
-
-    .funding-bar span { min-width: 5px; }
-    .funding-bar .people,
-    .cost-dot.people { background: var(--red); }
-    .funding-bar .tech,
-    .cost-dot.tech { background: var(--blue); }
-    .funding-bar .growth,
-    .cost-dot.growth { background: var(--green); }
-    .funding-bar .research,
-    .cost-dot.research { background: var(--yellow); }
-    .funding-bar .legal,
-    .cost-dot.legal { background: #845ec2; }
-    .funding-bar .reserve,
-    .cost-dot.reserve { background: #9a9aa2; }
-
-    .cost-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 20px;
-      padding: 13px 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-    }
-
-    .cost-row span { color: var(--ink-soft); }
-    .cost-row strong { font-size: 13px; }
-
-    .cost-dot {
-      width: 9px;
-      height: 9px;
-      display: inline-block;
-      margin-right: 8px;
-      border-radius: 2px;
-    }
-
-    .cost-row.total {
-      color: #fff;
-      background: var(--black);
-      padding-right: 14px;
-      padding-left: 14px;
-      border-bottom: 0;
-    }
-
-    .cost-row.total span { color: rgba(255, 255, 255, 0.72); }
-
-    .budget-note {
-      margin: 16px 0 0;
-      padding: 15px;
-      color: var(--ink-soft);
-      background: var(--green-soft);
-      border-left: 4px solid var(--green);
-      font-size: 12px;
-    }
-
-    .budget-note a {
-      color: inherit;
-      font-weight: 760;
-      text-decoration-color: rgba(20, 115, 67, 0.38);
-      text-underline-offset: 3px;
-    }
-
-    .growth-spend {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      margin-top: 16px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .growth-spend > div { min-height: 112px; padding: 13px; background: #fff; }
-    .growth-spend span { display: block; color: var(--green); font-size: 8px; font-weight: 820; }
-    .growth-spend strong { display: block; margin: 5px 0 2px; font-size: 15px; }
-    .growth-spend p { margin: 0; color: var(--muted); font-size: 9px; }
-
-    .checkpoint-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 1px;
-      margin-top: 24px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .checkpoint {
-      min-height: 150px;
-      padding: 18px;
-      background: #fff;
-    }
-
-    .checkpoint span {
-      display: block;
-      margin-bottom: 14px;
-      color: var(--red);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .checkpoint strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 17px;
-    }
-
-    .checkpoint p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .financial-head {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 48px;
-      align-items: end;
-      margin: 58px 0 22px;
-      padding-top: 38px;
-      border-top: 1px solid var(--line-strong);
-    }
-
-    .financial-head span {
-      display: block;
-      margin-bottom: 8px;
-      color: var(--red);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .financial-head h3 { margin: 0; font-size: 30px; }
-    .financial-head p { margin: 0; color: var(--ink-soft); font-size: 12px; }
-
-    .driver-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      margin-bottom: 26px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .driver-grid > div {
-      min-height: 126px;
-      padding: 18px;
-      background: #fff;
-    }
-
-    .driver-grid span { display: block; color: var(--red); font-size: 9px; font-weight: 820; }
-    .driver-grid strong { display: block; margin: 9px 0 4px; font-size: 17px; }
-    .driver-grid p { margin: 0; color: var(--muted); font-size: 10px; }
-
-    .financial-chart-grid {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 24px;
-      margin-bottom: 18px;
-    }
-
-    .financial-chart {
-      min-height: 390px;
-      padding: 24px;
-      background: #fff;
-      border: 1px solid var(--line-strong);
-    }
-
-    .financial-chart header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 20px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .financial-chart header span {
-      color: var(--red);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .financial-chart header strong {
-      font-size: clamp(18px, 2vw, 27px);
-      line-height: 1.15;
-      text-align: right;
-    }
-
-    .revenue-bars {
-      height: 245px;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      align-items: end;
-      gap: 22px;
-      padding: 18px 16px 0;
-      border-bottom: 1px solid var(--line-strong);
-      background: repeating-linear-gradient(to top, transparent 0 60px, #ececef 60px 61px);
-    }
-
-    .revenue-year {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .revenue-year > strong { font-size: 13px; }
-    .revenue-year > span { color: var(--muted); font-size: 9px; }
-
-    .revenue-bar {
-      width: min(72px, 68%);
-      min-height: 8px;
-      display: flex;
-      flex-direction: column-reverse;
-      overflow: hidden;
-      border: 1px solid rgba(23, 23, 25, 0.12);
-    }
-
-    .revenue-bar .consumer { background: var(--red); }
-    .revenue-bar .transaction { background: var(--blue); }
-    .revenue-bar .tools { background: var(--green); }
-
-    .chart-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: 9px;
-    }
-
-    .chart-legend span::before {
-      width: 8px;
-      height: 8px;
-      display: inline-block;
-      margin-right: 6px;
-      content: "";
-      background: var(--legend-color);
-    }
-
-    .profit-chart-body {
-      display: grid;
-      gap: 24px;
-      margin-top: 34px;
-    }
-
-    .profit-row {
-      display: grid;
-      grid-template-columns: 48px minmax(0, 1fr) 54px;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .profit-row > span { color: var(--ink-soft); font-size: 10px; }
-    .profit-row > strong { font-size: 12px; text-align: right; }
-
-    .profit-track {
-      position: relative;
-      height: 28px;
-      background: #f1f1f3;
-    }
-
-    .profit-track::after {
-      position: absolute;
-      top: -4px;
-      bottom: -4px;
-      left: 50%;
-      width: 1px;
-      content: "";
-      background: var(--line-strong);
-    }
-
-    .profit-bar {
-      position: absolute;
-      top: 5px;
-      height: 18px;
-    }
-
-    .profit-bar.loss { right: 50%; background: var(--red); }
-    .profit-bar.gain { left: 50%; background: var(--green); }
-
-    .profit-callout {
-      margin: 30px 0 0;
-      padding: 16px;
-      color: #0b5e4d;
-      background: var(--green-soft);
-      border-left: 4px solid var(--green);
-      font-size: 11px;
-      font-weight: 720;
-    }
-
-    .pl-details {
-      margin-top: 12px;
-      border: 1px solid var(--line-strong);
-      background: #fff;
-    }
-
-    .pl-details summary {
-      padding: 14px 16px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 780;
-    }
-
-    .pl-details[open] summary { border-bottom: 1px solid var(--line); }
-
-    .year-one-model {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 24px;
-      margin-bottom: 26px;
-    }
-
-    .model-funnel,
-    .unit-economics {
-      padding: 24px;
-      background: #fff;
-      border: 1px solid var(--line-strong);
-    }
-
-    .model-funnel > span,
-    .unit-economics > span {
-      display: block;
-      color: var(--red);
-      font-size: 9px;
-      font-weight: 820;
-    }
-
-    .model-funnel h4,
-    .unit-economics h4 { margin: 7px 0 18px; font-size: 19px; }
-
-    .funnel-equation {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .funnel-stage-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      margin: 14px 0 7px;
-      color: var(--muted);
-      font-size: 9px;
-      font-weight: 760;
-    }
-
-    .funnel-equation > div { min-height: 106px; padding: 13px; background: #f7f7f8; }
-    .funnel-equation b { display: block; color: var(--red); font-size: 20px; }
-    .funnel-equation strong { display: block; margin: 4px 0 2px; font-size: 10px; }
-    .funnel-equation small { color: var(--muted); font-size: 8px; }
-    .funnel-formula { margin: 14px 0 0; color: var(--ink-soft); font-size: 11px; font-weight: 700; }
-
-    .unit-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      padding: 9px 0;
-      border-top: 1px solid var(--line);
-      font-size: 11px;
-    }
-
-    .unit-row span { color: var(--muted); }
-    .unit-row strong { color: var(--ink); }
-    .unit-row.critical strong { color: var(--red); }
-    .unit-note { margin: 12px 0 0; padding: 10px; color: #52658f; background: var(--blue-soft); font-size: 10px; }
-
-    .sensitivity-strip {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      margin-top: 18px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .sensitivity-strip > div { min-height: 104px; padding: 15px; background: #fff; }
-    .sensitivity-strip span { display: block; color: var(--muted); font-size: 8px; font-weight: 820; }
-    .sensitivity-strip strong { display: block; margin: 6px 0 3px; font-size: 14px; }
-    .sensitivity-strip p { margin: 0; color: var(--muted); font-size: 9px; }
-    .sensitivity-strip .base { color: #fff; background: var(--black); }
-    .sensitivity-strip .base span,
-    .sensitivity-strip .base p { color: rgba(255,255,255,.58); }
-
-    .pl-table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--line-strong);
-      background: #fff;
-    }
-
-    .pl-table {
-      width: 100%;
-      min-width: 760px;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    .pl-table th,
-    .pl-table td {
-      padding: 12px 16px;
-      border-right: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      text-align: right;
-    }
-
-    .pl-table th { color: #fff; background: var(--black); font-size: 11px; }
-    .pl-table th:first-child,
-    .pl-table td:first-child { width: 46%; text-align: left; }
-    .pl-table th:last-child,
-    .pl-table td:last-child { border-right: 0; }
-    .pl-table tr:last-child td { border-bottom: 0; }
-    .pl-table .subtotal td { font-weight: 820; background: #f4f4f6; }
-    .pl-table .result td { color: #fff; background: var(--red); font-weight: 820; }
-
-    .model-note {
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 10px;
-    }
-
-    .team {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 26px;
-    }
-
-    .team-member {
-      padding: 15px;
-      border: 1px solid var(--line);
-      background: #fff;
-    }
-
-    .team-member strong { display: block; }
-
-    .team-member span {
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .budget-viz {
-      display: grid;
-      grid-template-columns: 210px 1fr;
-      gap: 32px;
-      align-items: center;
-    }
-
-    .donut {
-      position: relative;
-      width: 210px;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      background: conic-gradient(
-        var(--red) 0 60%,
-        var(--blue) 60% 72%,
-        var(--green) 72% 80%,
-        var(--yellow) 80% 87%,
-        #845ec2 87% 92%,
-        #76767e 92% 97%,
-        #c8c8ce 97% 100%
-      );
-    }
-
-    .donut::after {
-      position: absolute;
-      inset: 34px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      content: "¥200万";
-      color: var(--ink);
-      background: #fff;
-      border-radius: 50%;
-      font-size: 26px;
-      font-weight: 820;
-    }
-
-    .legend {
-      display: grid;
-      gap: 9px;
-    }
-
-    .legend-row {
-      display: grid;
-      grid-template-columns: 10px 1fr auto;
-      gap: 10px;
-      align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-    }
-
-    .legend-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
-    .legend-row strong { font-size: 12px; }
-
-    .gate-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      margin-top: 44px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .gate-metric {
-      min-height: 112px;
-      padding: 18px;
-      background: #fff;
-    }
-
-    .gate-metric span {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 820;
-    }
-
-    .gate-metric strong {
-      display: block;
-      color: var(--blue);
-      font-size: 24px;
-    }
-
-    .risk-layout {
-      display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
-      gap: 58px;
-      align-items: start;
-    }
-
-    .risk-statement {
-      padding-left: 20px;
-      border-left: 5px solid var(--red);
-    }
-
-    .risk-statement strong {
-      display: block;
-      margin-bottom: 16px;
-      font-size: clamp(28px, 3.4vw, 46px);
-      line-height: 1.18;
-    }
-
-    .risk-statement p {
-      color: var(--ink-soft);
-      font-size: 17px;
-    }
-
-    .risk-actions {
-      display: grid;
-      gap: 1px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    .risk-action {
-      display: grid;
-      grid-template-columns: 130px 1fr;
-      gap: 16px;
-      padding: 17px;
-      background: #fff;
-    }
-
-    .risk-action p {
-      margin: 0;
-      color: var(--ink-soft);
-      font-size: 13px;
-    }
-
-    .stop {
-      margin-top: 34px;
-      padding: 26px 30px;
-      color: #fff;
-      background: var(--red);
-    }
-
-    .stop span {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .stop strong {
-      display: block;
-      max-width: 1000px;
-      font-size: clamp(21px, 2.5vw, 32px);
-      line-height: 1.3;
-    }
-
-    .decision {
-      min-height: calc(100svh - 60px);
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 54px;
-      padding: clamp(64px, 8vw, 104px) clamp(24px, 6vw, 86px);
-      color: #fff;
-      background: var(--blue);
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
-    }
-
-    .decision h2 {
-      margin-bottom: 16px;
-      color: #fff;
-    }
-
-    .decision p {
-      max-width: 730px;
-      margin: 0;
-      color: rgba(255, 255, 255, 0.78);
-      font-size: 18px;
-    }
-
-    .decision-ask {
-      padding-left: 28px;
-      border-left: 1px solid rgba(255, 255, 255, 0.34);
-    }
-
-    .decision-ask span {
-      display: block;
-      margin-bottom: 10px;
-      color: rgba(255, 255, 255, 0.68);
-      font-size: 11px;
-      font-weight: 820;
-    }
-
-    .decision-ask strong {
-      display: block;
-      font-size: clamp(25px, 3vw, 40px);
-      line-height: 1.25;
-    }
-
-    .decision-ask ul {
-      padding-left: 20px;
-      margin: 22px 0 0;
-      color: rgba(255, 255, 255, 0.82);
-    }
-
-    .footer {
-      padding: 42px clamp(24px, 6vw, 86px) 54px;
-      color: var(--ink-soft);
-      background: #efefed;
-      border-top: 1px solid var(--line);
-      scroll-snap-align: start;
-    }
-
-    .footer-inner {
-      width: min(100%, var(--max));
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 0.8fr 1.2fr;
-      gap: 40px;
-    }
-
-    .footer strong { color: var(--ink); }
-
-    .footer p {
-      margin: 6px 0 0;
-      font-size: 12px;
-    }
-
-    .sources {
-      display: grid;
-      gap: 6px;
-    }
-
-    .sources a {
-      color: var(--blue);
-      font-size: 12px;
-    }
-
-    @media (max-width: 920px) {
-      html { scroll-snap-type: y proximity; }
-      .topbar nav { display: none; }
-      br.compact-break { display: block; }
-
-      .hero {
-        height: calc(100svh - 60px);
-        min-height: 620px;
-      }
-
-      .hero-content { justify-content: flex-start; padding-top: 78px; }
-      .hero-facts { left: 20px; right: 20px; bottom: 18px; grid-template-columns: repeat(2, 1fr); }
-      .hero-fact { min-width: 0; }
-      .hero-screen.one { left: -8%; }
-      .hero-screen.two { left: 42%; }
-      .hero-screen.three { right: -12%; }
-
-      .journey { grid-template-columns: 1fr; }
-      .journey-step { min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
-      .journey-step span { margin-bottom: 10px; }
-      .journey-step:last-child { border-bottom: 0; }
-
-      .tension { grid-template-columns: 1fr; }
-      .tension-gap { min-height: 64px; }
-
-      .choice-contrast { grid-template-columns: 1fr; }
-      .choice-pivot { min-height: 82px; }
-
-      .persona-layout,
-      .landscape-bottom,
-      .phase1-layout,
-      .financial-head { grid-template-columns: 1fr; }
-
-      .executive-layout,
-      .moat-grid { grid-template-columns: 1fr; }
-
-      .consumer-thesis,
-      .risk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-      .risk-card:last-child { grid-column: 1 / -1; }
-
-      .opening-questions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .gantt-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
-      .release-roadmap { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-      .agenda-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .executive-body { grid-template-columns: 1fr; }
-      .value-map { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-      .supply-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .screens.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .product-video { grid-template-columns: 1fr; gap: 16px; }
-      .supply-card:last-child { grid-column: 1 / -1; }
-      .ideal-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .ideal-flow > div:nth-child(2) { border-right: 0; }
-      .ideal-flow > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
-
-      .market-strip { grid-template-columns: 1fr 1fr; }
-      .market-lead,
-      .market-metric { border-bottom: 1px solid #3a3a3d; }
-
-      .demand-grid { grid-template-columns: 1fr; }
-      .demand-evidence-gallery { grid-template-columns: 1fr; }
-      .demand-funnel { grid-template-columns: repeat(2, 1fr); }
-      .funnel-step:nth-child(2) { border-right: 0; }
-      .funnel-step:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
-      .pricing-heading { grid-template-columns: 1fr; gap: 14px; }
-      .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .economics-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .economics-strip > div:nth-child(3) { border-right: 0; }
-
-      .business-phases { grid-template-columns: 1fr; }
-      .business-phase { min-height: 0; }
-      .flywheel { grid-template-columns: repeat(3, 1fr); }
-      .flywheel-arrow { text-align: center; }
-      .match-insight { grid-template-columns: 1fr; }
-
-      .plan-proof,
-      .pre-demo,
-      .independent-grid,
-      .investment-layout,
-      .risk-layout,
-      .decision,
-      .footer-inner { grid-template-columns: 1fr; }
-
-      .proof-grid,
-      .roadmap { grid-template-columns: repeat(2, 1fr); }
-      .validation-questions { grid-template-columns: repeat(2, 1fr); }
-      .research-streams { grid-template-columns: 1fr; }
-      .year-one-model { grid-template-columns: 1fr; }
-      .financial-chart-grid { grid-template-columns: 1fr; }
-      .phase:nth-child(2) { border-right: 0; }
-      .phase:nth-child(-n+2) { border-bottom: 1px solid #47474b; }
-
-      .decision-ask { padding: 28px 0 0; border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.34); }
-      .checkpoint-grid { grid-template-columns: repeat(2, 1fr); }
-      .checkpoint:last-child { grid-column: 1 / -1; }
-      .driver-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .growth-spend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    @media (max-width: 640px) {
-      .topbar { min-height: 56px; }
-      .internal { display: none; }
-      .hero { height: calc(100svh - 56px); min-height: 620px; }
-      .hero-content { padding-top: 56px; padding-bottom: 98px; }
-      .hero h1 { font-size: 54px; }
-      .hero-hook { font-size: 27px; }
-      .hero-hook .hero-gold-line { font-size: clamp(15px, 4.6vw, 22px); }
-      .hero-lead { font-size: 15px; }
-      .hero-screen { width: 210px; opacity: 0.76; }
-      .hero-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .hero-fact { padding: 9px 6px; text-align: center; }
-      .hero-fact strong { font-size: 15px; }
-      .hero-fact span { font-size: 9px; line-height: 1.25; }
-      .journey-heading { align-items: flex-start; }
-      .journey-heading strong { width: 100%; text-align: left; }
-      .opening-questions { grid-template-columns: 1fr; }
-      .opening-question { min-height: 142px; }
-      .agenda-grid { grid-template-columns: 1fr; }
-      .agenda-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
-      .value-map { grid-template-columns: 1fr; }
-      .value-row { min-height: 0; }
-      .executive-demo { padding: 14px; }
-      .executive-demo-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .executive-demo-flow span:last-child { grid-column: 1 / -1; }
-
-      .pain-grid,
-      .era-grid,
-      .product-thesis,
-      .ideal-flow,
-      .pricing-grid,
-      .economics-strip,
-      .consumer-thesis,
-      .screens,
-      .market-strip,
-      .demand-funnel,
-      .supply-grid,
-      .proof-grid,
-      .roadmap,
-      .team,
-      .gate-bar,
-      .checkpoint-grid { grid-template-columns: 1fr; }
-      .validation-questions,
-      .funnel-equation,
-      .sensitivity-strip { grid-template-columns: 1fr; }
-      .driver-grid { grid-template-columns: 1fr; }
-      .growth-spend { grid-template-columns: 1fr; }
-      .release-roadmap { grid-template-columns: 1fr; }
-      .risk-grid { grid-template-columns: 1fr; }
-      .risk-card:last-child { grid-column: auto; }
-      .moat-flywheel { grid-template-columns: 1fr; }
-      .moat-flywheel i { transform: rotate(90deg); }
-      .financial-chart { min-height: 0; padding: 18px; }
-      .financial-chart header { align-items: flex-start; flex-direction: column; gap: 6px; }
-      .financial-chart header strong { text-align: left; }
-      .revenue-bars { height: 220px; gap: 10px; padding-right: 4px; padding-left: 4px; }
-
-      .persona-card { grid-template-columns: 1fr; }
-      .persona-card img { height: 320px; }
-      .supply-card:last-child,
-      .checkpoint:last-child { grid-column: auto; }
-      .ideal-flow > div { border-right: 0; border-bottom: 1px solid var(--line); }
-      .ideal-flow > div:last-child { border-bottom: 0; }
-      .economics-strip > div { border-right: 0; border-bottom: 1px solid #3a3a3d; }
-      .economics-strip > div:last-child { border-bottom: 0; }
-
-      .market-lead,
-      .market-metric { border-right: 0; }
-      .screens { gap: 34px; }
-      .screens.four { grid-template-columns: 1fr; }
-      .screen-item img { max-height: 680px; object-fit: contain; }
-      .plan-proof { padding: 24px; gap: 28px; }
-      .advantage { grid-template-columns: 38px 1fr; }
-      .advantage-tag { grid-column: 2; justify-self: start; }
-      .competition-chart { min-height: 320px; }
-      .bubble { min-width: 70px; font-size: 10px; }
-      .bubble.xiaomei { min-width: 118px; min-height: 60px; font-size: 14px; }
-      .flywheel { grid-template-columns: 1fr; }
-      .flywheel-arrow { transform: rotate(90deg); }
-      .pre-demo-metrics { grid-template-columns: 1fr; }
-      .budget-viz { grid-template-columns: 1fr; }
-      .donut { margin: 0 auto; }
-      .risk-action { grid-template-columns: 1fr; }
-
-      .title-line,
-      .copy-line {
-        width: auto;
-        white-space: normal;
-      }
-
-      h2.semantic-title {
-        font-size: clamp(26px, 7.2vw, 30px);
-        line-height: 1.12;
-      }
-    }
-
-    @media print {
-      html,
-      body { background: #fff; }
-      html { scroll-snap-type: none; }
-      .page { width: 100%; box-shadow: none; }
-      .topbar { position: static; }
-      .section,
-      .decision { break-inside: avoid; }
-      .action { border: 1px solid currentColor; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="小美说商业提案：新氧与美呗竞品研究、个人审美决策服务、按次付费与六周验证。">
+<title>小美说｜商业提案 · 2026.09 更新</title>
+<style>
+:root{--paper:#f7f4ef;--white:#fffcf8;--ink:#26221f;--muted:#756d66;--wine:#6b283e;--line:#d9cfc3;--sand:#e9e0d5;--green:#375d4e}
+*{box-sizing:border-box}
+html{scroll-behavior:auto;scroll-padding-top:85px}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.75 -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif}
+a{color:inherit;text-underline-offset:4px}
+img,video{max-width:100%;display:block}
+button,input{font:inherit}
+h1,h2,h3,p,figure{margin:0}
+h1,h2,h3{font-family:'Songti SC','Noto Serif CJK SC',Georgia,serif;font-weight:500;line-height:1.3;text-wrap:balance}
+p,li{ text-wrap:pretty}
+h2{font-size:clamp(30px,3.6vw,49px);max-width:900px;margin:16px 0 24px}
+h3{font-size:25px;margin-bottom:12px}
+p+p{margin-top:16px}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px max(24px,calc((100vw - 1200px)/2));background:#f7f4eff2;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+.brand{font-family:'Songti SC',serif;font-size:26px;white-space:nowrap;letter-spacing:3px}
+.topbar nav{display:flex;gap:22px;overflow:auto;font-size:13px;white-space:nowrap}
+.topbar nav{scrollbar-width:none}
+.topbar nav::-webkit-scrollbar{display:none}
+.topbar a{text-decoration:none}
+.topbar a:hover{color:var(--wine)}
+.edition,.kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--wine);font-weight:600}
+.wrap{max-width:1200px;margin:auto;padding:0 32px}
+.hero{padding:74px 0 64px;border-bottom:1px solid var(--line)}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:76px;align-items:center}
+.hero h1{font-size:clamp(46px,5.5vw,76px);margin:24px 0 26px;letter-spacing:-2px}
+.hero .lead{font-size:20px;max-width:560px}
+.hero-photo{position:relative}
+.hero-photo img{width:100%;height:490px;object-fit:cover;object-position:top;background:var(--sand)}
+figcaption{font-size:12px;color:var(--muted);margin-top:12px}
+.hero-bottom{margin-top:36px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.link-button{display:inline-block;padding:12px 23px;background:var(--wine);color:white;text-decoration:none}
+.rule{margin-top:38px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+section.content{padding:76px 0;border-bottom:1px solid var(--line)}
+.intro{max-width:850px;font-size:19px;color:#514b45;margin-bottom:32px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card{padding:26px;border-top:2px solid var(--wine);background:var(--white)}
+.card .num{display:block;color:var(--wine);font-size:11px;letter-spacing:2px;margin-bottom:22px}
+.card p{font-size:15px;color:#625a52}
+.tag{display:inline-block;margin:14px 0 0;padding:3px 8px;border:1px solid var(--line);font-size:11px;color:var(--muted)}
+.callout{padding:23px 27px;border-left:3px solid var(--wine);background:var(--sand);margin:28px 0}
+.callout p{max-width:1000px}
+.dark{background:var(--ink);color:var(--paper)}
+.dark .kicker{color:#dfb7bf}
+.dark .intro,.dark .note{color:#cfc5bb}
+.dark .card{background:#332d29;border-color:#b98794}
+.dark .card p{color:#d2c8bd}
+.dark .card .num{color:#deb8c2}
+.dark .tag{color:#d2c8bd;border-color:#6e5d56}
+.dark .callout{background:#41352f;border-color:#d1a0ae}
+.matrix-wrap{overflow-x:auto;border-top:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:19px 18px;min-width:170px}
+th:first-child,td:first-child{min-width:160px}
+th{color:var(--wine);font-size:12px;background:#eee6dd}
+td strong{display:block;font-weight:600;margin-bottom:7px}
+.note{font-size:12px;color:var(--muted);margin-top:18px}
+.source-ref{color:var(--wine);font-size:11px;white-space:nowrap}
+.split{display:grid;grid-template-columns:.9fr 1.1fr;gap:52px;align-items:start}
+.steps{counter-reset:step}
+.step{display:grid;grid-template-columns:45px 1fr;gap:16px;padding:22px 0;border-top:1px solid var(--line)}
+.step::before{counter-increment:step;content:'0'counter(step);font-size:12px;color:var(--wine)}
+.step strong{font-size:18px;font-weight:600}
+.step p{font-size:14px;color:var(--muted);margin-top:5px}
+.score{font-family:Georgia,serif;font-size:48px;color:var(--wine);line-height:1.15;margin-bottom:12px}
+.metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding:30px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:30px 0}
+.metric-row span{font-size:13px;color:var(--muted)}
+.current{display:inline-block;color:var(--green);font-size:12px;font-weight:600;margin-bottom:10px}
+.experimental{color:var(--wine)}
+.demo{margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+.demo video{width:100%;background:#211e1b;border:1px solid var(--line)}
+.price{font:42px/1.2 Georgia,serif;margin:14px 0 20px}
+.price small{font:12px/1.5 sans-serif}
+.budget{height:26px;display:flex;margin:24px 0}
+.budget i{display:block}
+.budget i:nth-child(1){width:65%;background:var(--wine)}
+.budget i:nth-child(2){width:15%;background:#a77570}
+.budget i:nth-child(3){width:6%;background:#bfa78e}
+.budget i:nth-child(4){width:14%;background:#527163}
+.cost-list{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.cost-list strong{font:30px/1.4 Georgia,serif}
+.cost-list span{display:block;font-size:13px;color:var(--muted)}
+.calculator{padding:30px;background:var(--white);border:1px solid var(--line);margin-top:30px}
+.inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.inputs label{display:block;color:var(--muted);font-size:13px}
+.inputs input{display:block;width:100%;margin-top:8px;padding:10px 12px;background:var(--paper);border:1px solid var(--line);border-radius:0;color:var(--ink)}
+.outputs{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;border-top:1px solid var(--line);margin-top:28px;padding-top:25px}
+.outputs output{display:block;font:34px/1.4 Georgia,serif;color:var(--wine)}
+.outputs span{font-size:13px;color:var(--muted)}
+ul{padding-left:21px;margin:16px 0 0}
+li+li{margin-top:9px}
+.sources{display:grid;grid-template-columns:1fr 1fr;gap:20px 40px}
+.source{font-size:13px;padding-top:16px;border-top:1px solid var(--line)}
+.source strong{display:block;margin-bottom:6px}
+.source p{color:var(--muted);font-size:12px}
+.source a{overflow-wrap:anywhere}
+.footer{padding:35px 0 50px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:25px}
+.no-orphan{white-space:nowrap}
+details{margin-top:24px;border-top:1px solid var(--line);padding-top:20px}
+summary{cursor:pointer;font-weight:600}
+.revision{font-size:12px;margin-top:22px;color:var(--muted)}
+:focus-visible{outline:2px solid var(--wine);outline-offset:4px}
+@media(max-width:850px){.hero-grid,.split,.demo{grid-template-columns:1fr;gap:30px}
+.hero-photo img{height:360px;object-position:center 25%}
+.hero-photo{max-width:540px}
+.grid,.grid.two{grid-template-columns:1fr}
+.metric-row{grid-template-columns:1fr 1fr}
+.topbar{padding:12px 20px;align-items:flex-start;flex-direction:column;gap:8px}
+.topbar nav{width:100%;gap:20px}
+.edition{display:none}
+.wrap{padding:0 22px}
+.hero{padding:42px 0}
+.hero h1{font-size:46px;letter-spacing:-1px}
+.hero .lead,.intro{font-size:17px}
+section.content{padding:48px 0}
+.inputs,.outputs{grid-template-columns:1fr 1fr}
+.cost-list{grid-template-columns:1fr 1fr}
+.sources{grid-template-columns:1fr}
+.calculator{padding:22px}
+h3{font-size:23px}
+}
+@media(max-width:400px){.inputs,.outputs{grid-template-columns:1fr}
+.hero h1{font-size:39px}
+.hero-photo img{height:310px}
+.card{padding:22px}
+.footer{flex-direction:column}
+.metric-row{gap:20px}
+.score{font-size:38px}
+}
+@media print{.topbar{position:static}
+.hero{padding:30px 0}
+.hero-photo img{height:300px}
+section.content{padding:30px 0}
+.grid,.split{break-inside:avoid}
+video{display:none}
+.dark{background:white;color:var(--ink)}
+.dark .card{background:var(--paper)}
+.dark .intro,.dark .card p,.dark .note{color:var(--ink)}
+}
+
+</style>
 </head>
 <body>
-  <main class="page">
-    <header class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>小美说 · Darwin 内部创业</span></div>
-      <nav aria-label="页面导航">
-        <a href="#summary">概览</a><a href="#consumer">用户</a><a href="#landscape">竞品</a><a href="#product">产品</a><a href="#business">商业模式</a><a href="#execution">验证</a><a href="#phase1">资源</a>
-      </nav>
-      <span class="internal">项目 Memo Onepage · vF</span>
-    </header>
-
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-scenes" aria-hidden="true">
-        <img class="hero-screen one" src="assets/demo-feed-home.png" alt=""><img class="hero-screen two" src="assets/demo-plan-top-v2.png" alt=""><img class="hero-screen three" src="assets/demo-project-sandbox.png" alt="">
-      </div>
-      <div class="hero-content">
-        <div class="eyebrow">Darwin 内部创业 · 独立消费者 App</div><h1 id="hero-title">小美说</h1>
-        <div class="hero-hook"><span class="title-line">美没有统一答案，</span><em class="title-line hero-gold-line">你真正喜欢的样子，才是变美的起点。</em></div>
-        <p class="hero-lead"><strong>读懂你喜欢的美，看见它在你身上的真实可能。</strong></p>
-      </div>
-    </section>
-
-    <section class="section executive-section" id="summary">
-      <div class="section-inner">
-        <div class="executive-layout">
-          <div class="executive-copy">
-            <div class="section-kicker">00 / 执行摘要</div>
-            <h2 class="semantic-title"><span class="title-line">从“我喜欢什么”，</span><span class="title-line">到“我该怎么做”</span></h2>
-            <p class="value-proposition">小美说从你的收藏夹中学习你长期积累的个人审美，再结合真实面部条件，形成行动前效果可见、可靠、可执行的医美行动方案。</p>
-          </div>
-          <figure class="executive-demo"><figcaption><strong>核心产品交付</strong></figcaption><div class="executive-demo-flow" aria-label="小美说五步核心产品交付"><span><b>01</b>个人审美画像</span><span><b>02</b>真实现状分析</span><span><b>03</b>效果模拟</span><span><b>04</b>项目与剂量</span><span><b>05</b>分阶段行动</span></div><img src="artifacts/xiaomeishuo-demo/core-ux-deliverables-storyboard.png" alt="个人审美画像、真实现状分析、效果模拟、项目与剂量及分阶段行动界面"></figure>
-        </div>
-      </div>
-    </section>
-
-    <section class="section agenda-section" id="agenda">
-      <div class="section-inner"><div class="section-kicker">阅读目录</div><nav class="agenda-grid" aria-label="商业计划书目录">
-        <a class="agenda-item" href="#consumer"><span>01</span><strong>用户与痛点</strong></a><a class="agenda-item" href="#landscape"><span>02</span><strong>竞争空白</strong></a><a class="agenda-item" href="#why-now"><span>03</span><strong>为什么现在</strong></a><a class="agenda-item" href="#product"><span>04</span><strong>产品交付</strong></a><a class="agenda-item" href="#business"><span>05</span><strong>商业模式</strong></a><a class="agenda-item" href="#independent"><span>06</span><strong>为什么能成</strong></a><a class="agenda-item" href="#execution"><span>07</span><strong>六周验证</strong></a><a class="agenda-item" href="#phase1"><span>08</span><strong>资源与里程碑</strong></a><a class="agenda-item" href="#risk"><span>09</span><strong>最大风险</strong></a>
-      </nav></div>
-    </section>
-
-    <section class="section" id="consumer">
-      <div class="section-inner">
-        <div class="section-kicker">01 / 用户与核心痛点</div><h2 class="semantic-title"><span class="title-line">她收藏了 200 个“想成为的样子”，</span><span class="title-line">仍不知道哪一个适合自己</span></h2>
-        <div class="persona-layout">
-          <article class="persona-card"><img src="assets/ideal-natural.jpg" alt="核心用户代表"><div class="persona-copy"><span class="persona-label">核心用户画像</span><h3>林然，29 岁</h3><p>未来 3–6 个月准备行动，预算 1–3 万；有收藏、有顾虑，正在项目与医生之间做决定。</p><div class="persona-tags"><span>高意向</span><span>高研究</span><span>低信任</span><span>拒绝模板脸</span></div><blockquote class="persona-quote">“小红书上有很多我喜欢的长相，但我说不清自己的审美，也不知道什么真正适合我、<span class="keep-together">哪些改变可以实现。”</span></blockquote></div></article>
-          <div class="reverse-funnel"><strong>反漏斗目标人群与规模</strong><div class="audience-layer core"><span>核心人群 · 先服务谁</span><div class="audience-title-row"><strong>医美高意向决策者</strong><b>2,084 万</b></div></div><div class="audience-layer"><span>兴趣人群 · 再扩到谁</span><div class="audience-title-row"><strong>长期变美研究者</strong><b>约 1 亿</b></div></div><div class="audience-layer"><span>泛人群 · 最后服务谁</span><div class="audience-title-row"><strong>外观改善人群</strong><b>1.5 亿+</b></div></div><p class="audience-source">来源：小红书灵犀平台；三层人群重叠，不可直接相加。</p></div>
-        </div>
-
-        <div class="journey-heading"><span>当前用户旅程 · 使用小美说之前</span><strong>灵感很多，真正的判断发生得太晚</strong></div>
-        <div class="journey titles-only" aria-label="当前医美决策旅程">
-          <article class="journey-step"><span>01 · 产生向往</span><strong>刷到理想形象</strong></article>
-          <article class="journey-step"><span>02 · 收藏案例</span><strong>收藏前后对比</strong></article>
-          <article class="journey-step"><span>03 · 自己研究</span><strong>越做功课越复杂</strong></article>
-          <article class="journey-step"><span>04 · 进入面诊</span><strong>拿参考图找医生</strong></article>
-          <article class="journey-step"><span>05 · 接受推荐</span><strong>供给方给出方案</strong></article>
-          <article class="journey-step danger"><span>06 · 看见结果</span><strong>做完才知道</strong></article>
-        </div>
-
-        <div class="consumer-thesis">
-          <div class="consumer-truth"><span>痛点 01 · 个性适配</span><strong>她不要主流审美下的标准答案，她要符合自己审美的方案</strong></div>
-          <div class="consumer-truth"><span>痛点 02 · 效果黑箱</span><strong>项目做到自己脸上会是什么效果</strong></div>
-          <div class="consumer-truth"><span>痛点 03 · 虚假案例</span><strong>网上大量“AI换头”，正在制造根本达不到的幻想</strong></div>
-          <div class="consumer-truth"><span>痛点 04 · 供给偏差</span><strong>她问“什么最适合我”，得到的可能是“医院/医生最想卖什么”</strong></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="landscape">
-      <div class="section-inner">
-        <div class="section-kicker">02 / 竞争审计</div><h2 class="semantic-title"><span class="title-line">内容给灵感，机构卖项目，</span><span class="title-line">中间缺一个个人审美决策层</span></h2>
-        <div class="matrix-wrap"><table class="capability-matrix" aria-label="竞品核心能力对比"><thead><tr><th>核心能力</th><th>小红书</th><th>QOVES</th><th>美图类</th><th>新氧类</th><th>人工咨询</th><th>小美说</th></tr></thead><tbody>
-          <tr><td>学习个人审美与反目标</td><td class="partial">◐</td><td class="partial">◐</td><td class="no">○</td><td class="no">○</td><td class="yes">●</td><td class="yes">●</td></tr>
-          <tr><td>映射本人真实基础</td><td class="no">○</td><td class="yes">●</td><td class="partial">◐</td><td class="no">○</td><td class="yes">●</td><td class="yes">●</td></tr>
-          <tr><td>可信案例与约束模拟</td><td class="partial">◐</td><td class="no">○</td><td class="no">○</td><td class="partial">◐</td><td class="partial">◐</td><td class="yes">●</td></tr>
-          <tr><td>材料剂量与分阶段方案</td><td class="no">○</td><td class="partial">◐</td><td class="no">○</td><td class="partial">◐</td><td class="yes">●</td><td class="yes">●</td></tr>
-          <tr><td>按审美匹配医生</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="partial">◐</td><td class="yes">●</td></tr>
-        </tbody></table></div>
-        <div class="landscape-bottom whitespace-only" aria-label="竞争格局与市场空位">
-          <div class="competition-chart" role="img" aria-label="小美说位于更理解个人审美且更接近现实决策的右上角市场空位">
-            <span class="white-space-zone">市场空位 · 个人审美决策层</span>
-            <span class="axis-y">更接近现实决策 ↑</span>
-            <span class="axis-x">更理解“我眼中的美” →</span>
-            <span class="bubble qoves">QOVES</span><span class="bubble soyoung">新氧 / 更美</span><span class="bubble youcam">美图类</span><span class="bubble realself">人工咨询</span><span class="bubble xiaomei">小美说<br>个人审美 × 现实方案</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section dark-section" id="why-now">
-      <div class="section-inner">
-        <div class="section-kicker">03 / 为什么是现在</div>
-        <h2 class="semantic-title"><span class="title-line">UGC 内容让审美个人化，</span><span class="title-line">AI 让个人审美可视、可量化</span></h2>
-        <div class="era-grid">
-          <article class="era"><span class="era-label">过去 · 大众曝光时代</span><h3>所有人模仿少数几张脸</h3><p>明星脸成为默认答案，却与普通人的基础、生活方式和真实需求相距甚远。</p></article>
-          <article class="era new"><span class="era-label">现在 · UGC 时代</span><h3>每个人都能找到自己的理想审美聚类</h3><p>相似普通人、妆造、肤色与恢复记录，第一次提供了更接近自己的参照系。</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="product">
-      <div class="section-inner"><div class="section-kicker">04 / 产品交付</div><h2 class="semantic-title"><span class="title-line">从收藏中的理想样本，</span><span class="title-line">到适合本人的可行方案</span></h2>
-        <div class="product-thesis">
-          <div><span>使用小美说之前</span><strong>主流审美告诉我，<br>怎样才算更好看。</strong></div>
-          <div><span>使用小美说之后</span><strong>先读懂我眼中的美，<br>再转化为适合我的可行方案。</strong></div>
-        </div>
-        <div class="product-video"><div class="product-video-copy"><span>29 秒产品使用演示</span><strong>从审美学习，<br>到真实效果与行动方案</strong></div><video controls playsinline preload="metadata" poster="artifacts/xiaomeishuo-demo/core-ux-deliverables-storyboard.png"><source src="assets/xiaomeishuo-product-walkthrough.mp4" type="video/mp4">你的浏览器暂不支持视频播放。</video></div>
-        <div class="screens four"><figure class="screen-item"><img src="assets/demo-feed-home.png" alt="导入个人推荐与收藏"><figcaption><strong>01 · 学习个人审美</strong></figcaption></figure><figure class="screen-item"><img src="assets/demo-feature-selection.png" alt="选择五官变化方向"><figcaption><strong>02 · 选择变化方向</strong></figcaption></figure><figure class="screen-item"><img src="assets/demo-project-sandbox.png" alt="比较项目材料与用量"><figcaption><strong>03 · 比较现实效果</strong></figcaption></figure><figure class="screen-item"><img src="assets/demo-plan-top-v2.png" alt="完整个性化方案"><figcaption><strong>04 · 获得行动方案</strong></figcaption></figure></div>
-        <div class="plan-proof"><img src="assets/demo-plan-bottom.png" alt="完整长方案"><div><div class="section-kicker">最终交付</div><h3>不是一张效果图，而是一份能带去面诊的完整计划</h3><div class="plan-list"><div class="plan-row"><span>01</span><p><strong>个人审美画像</strong></p></div><div class="plan-row"><span>02</span><p><strong>参考图真实性验证</strong></p></div><div class="plan-row"><span>03</span><p><strong>本人真实现状分析</strong></p></div><div class="plan-row"><span>04</span><p><strong>预算与项目偏好</strong></p></div><div class="plan-row"><span>05</span><p><strong>完整项目建议 &amp; 效果模拟</strong></p></div><div class="plan-row"><span>06</span><p><strong>分阶段优先级与面诊清单</strong></p></div></div></div></div>
-      </div>
-    </section>
-
-    <section class="section dark-section" id="business"><div class="section-inner"><div class="section-kicker">05 / 商业模式</div><h2 class="semantic-title"><span class="title-line">先为判断收费，</span><span class="title-line">再用审美匹配连接交易</span></h2><div class="business-phases">
-      <article class="business-phase"><span class="phase-number">个性化医美方案建议</span><h3>Phase 1 · 上线即收费</h3><p>免费获得基础审美画像；付费解锁本人映射、完整方案、多方案模拟、项目比较与不建议项解释。</p><strong>收费方式</strong><p>单次方案、年度订阅与专家复核</p></article>
-      <article class="business-phase"><span class="phase-number">审美匹配交易平台</span><h3>Phase 2 · 产品价值成立后</h3><p>按审美偏好、相似基础、风险承受度和真实案例匹配医生与医院，同时兼顾距离、销量和价格。</p><strong>收费方式</strong><p>医生与项目交易佣金</p></article>
-      <article class="business-phase"><span class="phase-number">医生/机构口碑网络</span><h3>Phase 3 · 建立网络效应</h3><p>用核验交易、实际结果与分维度评价建立医生审美档案，让每次服务改善下一次匹配。</p><strong>收费方式</strong><p>订阅、交易与机构工具</p></article>
-    </div></div></section>
-
-    <section class="section demand-signal-section" id="demand-signal"><div class="section-inner"><div class="section-kicker">商业验证 / 用户付费意愿信号</div><h2 class="semantic-title"><span class="title-line">用户已经在为“更适合我的判断”付费</span></h2><p class="section-intro">站内审美与面部设计账号已经用专业判断承接咨询：用户愿意在项目发生前，为更懂自己、更有现实边界的建议付费。六周验证将进一步测试这类需求能否被产品稳定承接。</p><div class="demand-evidence-gallery"><figure class="demand-evidence"><img src="assets/xhs-demand-pure-shezhang.jpg" alt="纯社长面部设计公开主页与笔记"><figcaption><strong>纯社长面部设计</strong></figcaption></figure><figure class="demand-evidence"><img src="assets/xhs-demand-qiu-zhangmen.jpg" alt="设计大佬邱掌门公开主页与笔记"><figcaption><strong>设计大佬邱掌门</strong></figcaption></figure><figure class="demand-evidence"><img src="assets/xhs-demand-wang-tiezhu.jpg" alt="王铁柱的颜究所公开主页与笔记"><figcaption><strong>王铁柱的颜究所</strong></figcaption></figure></div></div></section>
-
-    <section class="section" id="independent"><div class="section-inner"><div class="section-kicker">06 / 为什么能做成</div><h2 class="semantic-title"><span class="title-line">小红书提供独特起点，</span><span class="title-line">小美说建立专属技术与数据壁垒</span></h2><div class="moat-grid">
-      <article class="moat-panel"><span>01 / 小红书背书与技术底座</span><h3>从最丰富的审美表达出发</h3><div class="moat-item"><b>01</b><div><strong>高密度、多元 UGC 样本</strong><p>素人长相、妆造、肤色、恢复记录与真实复盘，比明星脸更适合作为个人参照。</p></div></div><div class="moat-item"><b>02</b><div><strong>内容理解、推荐与多模态能力</strong><p>识别长期被什么打动，并在用户授权后使用收藏与主动选择信号。</p></div></div><div class="moat-item"><b>03</b><div><strong>灵犀消费者与医美行业洞察</strong><p>从搜索与内容行为中识别高意向人群、决策痛点与需求变化。</p></div></div></article>
-      <article class="moat-panel product"><span>02 / 小美说专属技术壁垒</span><h3>把审美理解变成现实决策</h3><div class="moat-item"><b>01</b><div><strong>用户审美库</strong><p>持续积累“喜欢什么、拒绝什么、最终选择什么”的结构化审美数据。</p></div></div><div class="moat-item"><b>02</b><div><strong>医生知识体系与大陆项目库</strong><p>沉淀部位、材料、剂量、风险、替代路线和医学安全规则。</p></div></div><div class="moat-item"><b>03</b><div><strong>受现实约束的效果模拟</strong><p>在保留身份的前提下，让模拟受本人条件、项目能力与合理剂量约束。</p></div></div></article>
-      <div class="moat-flywheel"><span>个人偏好</span><i>→</i><span>现实方案</span><i>→</i><span>医生与交易</span><i>→</i><span>真实结果与评价</span></div>
-    </div></div></section>
-
-    <section class="section dark-section" id="execution"><div class="section-inner"><div class="section-kicker">07 / 已完成与六周验证</div><h2 class="semantic-title"><span class="title-line">用六周回答四件事：</span><span class="title-line">懂不懂我、有没有用、愿不愿付费、是否安全</span></h2>
-      <div class="proof-grid"><article class="proof"><span>✓ 已完成</span><h3>消费者、竞品与医生研究</h3><p>梳理用户决策链路、竞品能力与医生真实顾虑。</p></article><article class="proof"><span>✓ 已完成</span><h3>大陆项目库 V0.1</h3><p>覆盖光电、注射、眉形与主流材料。</p></article><article class="proof"><span>✓ 已完成</span><h3>端到端可用原型</h3><p>拍照、偏好学习、方向选择、模拟与完整方案。</p></article><article class="proof"><span>✓ 已完成</span><h3>商业与安全命题</h3><p>明确付费点、医生抽审与高风险边界。</p></article></div>
-
-      <div class="validation-questions" aria-label="六周验证的四个核心问题"><article class="validation-question"><span>01 · 需求</span><strong>用户缺的是信息，还是适合自己的判断？</strong></article><article class="validation-question"><span>02 · 信任</span><strong>用户会说“它真的懂我”吗？</strong></article><article class="validation-question"><span>03 · 价值</span><strong>方案会改变决策，并值得付费吗？</strong></article><article class="validation-question"><span>04 · 安全</span><strong>医生认为方向现实、可沟通、不过界吗？</strong></article></div>
-
-      <div class="research-streams" aria-label="六周研究计划"><article class="research-stream"><span>研究 01 · 消费者发现</span><h3>20 次深访</h3><strong>找到真实决策任务</strong><p>理解焦虑发生在哪一步、什么必须保留，以及预算与恢复期如何改变选择。</p></article><article class="research-stream"><span>研究 02 · 原型与定价</span><h3>30–50 人测试</h3><strong>测可用、可信、有用、愿付</strong><p>用真实收藏与标准照片跑完整路径，以真实支付替代口头意愿。</p></article><article class="research-stream"><span>研究 03 · 专家盲审</span><h3>8–10 位专家</h3><strong>校准现实边界与安全红线</strong><p>盲审 20–30 份方案，核验方向、材料、剂量范围与风险表达。</p></article></div>
-
-      <div class="roadmap six-week-roadmap"><article class="phase"><span class="phase-time">W1</span><h3>发现问题</h3></article><article class="phase"><span class="phase-time">W2</span><h3>定义测试</h3></article><article class="phase"><span class="phase-time">W3–4</span><h3>跑通原型</h3></article><article class="phase"><span class="phase-time">W5</span><h3>付费与盲审</h3></article><article class="phase"><span class="phase-time">W6</span><h3>证据评审</h3></article></div>
-      <div class="pre-demo"><div class="pre-demo-lead"><span>六周冷启验证</span><strong>¥2万<br>6周</strong><p>先购买真实证据，再决定是否放大。</p></div><div class="pre-demo-body"><h3>交付可独立操作的产品、真实用户反馈、支付记录与专家盲审结果</h3><div class="pre-demo-metrics"><div class="pre-demo-metric"><strong>≥70%</strong><span>画像认同</span></div><div class="pre-demo-metric"><strong>≥60%</strong><span>方案有用</span></div><div class="pre-demo-metric"><strong>5–10</strong><span>真实支付</span></div><div class="pre-demo-metric"><strong>0</strong><span>严重医疗误导</span></div></div></div></div>
-    </div></section>
-
-    <section class="section" id="phase1"><div class="section-inner"><div class="section-kicker">08 / 资源与里程碑</div><h2 class="semantic-title"><span class="title-line">200 万，跑完 12 个月验证</span></h2><p class="section-intro">用最小但真实的全职核心团队，把原型变成独立 App，并依次验证审美理解、完整方案、真实付费、留存获客与医生匹配。</p>
-
-      <div class="gantt-heading"><div><span>12 个月产品发布路线图</span><h3>MVP → Phase 1 灰测 → Phase 2 V1 → Phase 3 V2</h3></div></div>
-      <div class="release-roadmap" aria-label="MVP 到 V2 产品版本里程碑"><article class="release-stage" style="--stage-color:var(--red)"><span>M1–M2 · MVP 内部版</span><h4>先证明“它懂我”</h4><p>人工辅助跑通最小价值链</p><ul><li>标准化拍摄与偏好选择</li><li>个人审美画像与反馈</li></ul><span class="release-gate">20–30 位内测用户</span></article><article class="release-stage" style="--stage-color:var(--blue)"><span>M3–M4 · Phase 1 灰测</span><h4>跑通独立 App 闭环</h4><p>从画像进入本人方案</p><ul><li>本人映射、三档方案与模拟</li><li>付费、修改与专家抽审</li></ul><span class="release-gate">50–100 位灰测用户</span></article><article class="release-stage" style="--stage-color:var(--green)"><span>M5–M6 · Phase 2 V1</span><h4>小范围正式上线</h4><p>从好用走向可付费、可面诊</p><ul><li>大陆项目、材料与剂量范围</li><li>分阶段计划与效果追踪</li></ul><span class="release-gate">300–500 位真实用户</span></article><article class="release-stage" style="--stage-color:#845ec2"><span>M7–M12 · Phase 3 V2</span><h4>验证留存与审美匹配</h4><p>从一次方案走向长期平台</p><ul><li>长期审美档案与复购</li><li>医生画像、评价与交易试验</li></ul><span class="release-gate">2 万注册 / 600 付费</span></article></div>
-
-      <div class="gantt-wrap" aria-label="小美说 12 个月项目甘特图"><div class="gantt"><div class="gantt-phases"><span>产品阶段</span><strong style="grid-column:2 / 4;--phase-color:var(--red);--phase-bg:var(--red-soft)">MVP</strong><strong style="grid-column:4 / 6;--phase-color:var(--blue);--phase-bg:var(--blue-soft)">Phase 1</strong><strong style="grid-column:6 / 8;--phase-color:var(--green);--phase-bg:var(--green-soft)">Phase 2</strong><strong style="grid-column:8 / 14;--phase-color:#845ec2;--phase-bg:#f0eafa">Phase 3</strong></div><div class="gantt-months"><span>工作流 / 功能</span><span>M1</span><span>M2</span><span>M3</span><span>M4</span><span>M5</span><span>M6</span><span>M7</span><span>M8</span><span>M9</span><span>M10</span><span>M11</span><span>M12</span></div><div class="gantt-row"><strong>用户研究与审美模型</strong><div class="gantt-track"><span class="gantt-bar" style="grid-column:1 / 13;--bar-color:var(--red)">研究、画像与持续校准</span></div></div><div class="gantt-row"><strong>独立 App 核心产品</strong><div class="gantt-track"><span class="gantt-bar" style="grid-column:1 / 8;--bar-color:var(--blue)">拍摄、选择、方案、支付与 V1</span></div></div><div class="gantt-row"><strong>项目库与效果模拟</strong><div class="gantt-track"><span class="gantt-bar" style="grid-column:2 / 11;--bar-color:var(--yellow)">材料、剂量与现实效果边界</span></div></div><div class="gantt-row"><strong>医学安全与专家抽审</strong><div class="gantt-track"><span class="gantt-bar" style="grid-column:1 / 13;--bar-color:#845ec2">规则、抽审与持续监控</span></div></div><div class="gantt-row"><strong>增长、留存与医生匹配</strong><div class="gantt-track"><span class="gantt-bar" style="grid-column:5 / 13;--bar-color:#0d9488">小红书推广、复购、匹配与交易</span></div></div><div class="gantt-milestones"><div><span>M2 · MVP</span><strong>审美理解成立</strong></div><div><span>M4 · Phase 1</span><strong>完整闭环跑通</strong></div><div><span>M6 · Phase 2</span><strong>付费与安全成立</strong></div><div><span>M12 · Phase 3</span><strong>留存与匹配成立</strong></div></div></div></div>
-
-      <div class="phase1-layout"><div class="cost-envelope"><span>12 个月资金申请</span><strong>¥200 万</strong><p>核心人力包含项目提报人 12 个月用人成本，以及工程、产品设计、用户研究与增长投入；医学、隐私与法务采用顾问和项目制。</p></div><div><div class="funding-bar" role="img" aria-label="200 万预算分配"><span class="people" style="width:65%"></span><span class="tech" style="width:6%"></span><span class="growth" style="width:15%"></span><span class="research" style="width:14%"></span></div><div class="cost-table"><div class="cost-row"><span>核心人力（含项目提报人）</span><strong>130 万</strong></div><div class="cost-row"><span>小红书推广</span><strong>30 万</strong></div><div class="cost-row"><span>AI 与技术</span><strong>12 万</strong></div><div class="cost-row"><span>研究、安全、法务与预备金</span><strong>28 万</strong></div><div class="cost-row total"><span>合计</span><strong>200 万</strong></div></div></div></div>
-      <div class="section-kicker">项目成功标准</div><div class="checkpoint-grid"><div class="checkpoint"><span>M6 · 产品</span><strong>独立测试版</strong></div><div class="checkpoint"><span>M6 · 用户</span><strong>300–500 人</strong></div><div class="checkpoint"><span>M6 · 付费</span><strong>30–50 单</strong></div><div class="checkpoint"><span>M6 · 安全</span><strong>100 份抽审</strong></div><div class="checkpoint"><span>M12 · 增长</span><strong>2 万注册 / 600 付费</strong></div></div>
-    </div></section>
-
-    <section class="section" id="risk"><div class="section-inner"><div class="section-kicker">09 / 最大风险</div><h2 class="semantic-title"><span class="title-line">三类风险，</span><span class="title-line">决定产品能否真正成立</span></h2><div class="risk-grid">
-      <article class="risk-card"><span>风险 01 · 产品与医疗安全</span><h3>AI 方案与真实效果差距过大</h3><p>方案失真会失去医生与用户信任，并可能引发错误治疗。</p></article>
-      <article class="risk-card"><span>风险 02 · 增长与合规</span><h3>医美推广限制可能抬高获客难度</h3><p>医美推广、效果承诺及人脸健康数据均受严格限制。</p></article>
-      <article class="risk-card"><span>风险 03 · 竞争窗口</span><h3>新氧等平台可能更早推出类似功能</h3><p>成熟平台已有供给与交易入口，可能快速复制表层功能。</p></article>
-    </div></div></section>
-  </main>
-<style id="vf-review-adjustments" data-review="final-six-comments">
-  .executive-demo video {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    display: block;
-    object-fit: cover;
-    background: #111;
-  }
-
-  .future-six-week-title {
-    margin: 42px 0 18px;
-    color: #ff2442;
-    font-size: 16px;
-    line-height: 1.3;
-    font-weight: 800;
-  }
-
-  @media (max-width: 720px) {
-    .future-six-week-title {
-      margin-top: 30px;
-    }
-  }
-</style>
-<script id="vf-review-adjustments-script">
-  document.addEventListener('DOMContentLoaded', () => {
-    const demoFigure = document.querySelector('.executive-demo');
-    const demoImage = demoFigure?.querySelector('img');
-
-    if (demoFigure && demoImage) {
-      const video = document.createElement('video');
-      video.src = './assets/xiaomeishuo-product-demo-v1.mp4?v=11-images-20260717';
-      video.poster = demoImage.currentSrc || demoImage.src;
-      video.controls = true;
-      video.playsInline = true;
-      video.muted = true;
-      video.autoplay = true;
-      video.loop = true;
-      video.preload = 'metadata';
-      video.setAttribute('aria-label', '小美说产品使用演示');
-      demoImage.replaceWith(video);
-    }
-
-    document.querySelector('.product-video')?.remove();
-
-    const businessTitle = document.querySelector('#business h2 .title-line:first-child');
-    if (businessTitle) {
-      businessTitle.textContent = '先为美学设计方案付费';
-    }
-
-    const executionTitleLines = document.querySelectorAll('#execution h2 .title-line');
-    if (executionTitleLines[1]) {
-      executionTitleLines[1].textContent = '愿不愿意用、好不好用、愿不愿意付费、是否安全';
-    }
-
-    const roadmap = document.querySelector('.six-week-roadmap');
-    const deepInterview = [...document.querySelectorAll('#execution *')]
-      .find((element) => element.children.length === 0 && element.textContent.trim() === '20 次深访');
-    const taskGrid = deepInterview?.closest('article')?.parentElement;
-
-    if (!document.querySelector('.future-six-week-title')) {
-      const title = document.createElement('div');
-      title.className = 'future-six-week-title';
-      title.textContent = '未来 6 周 To-do';
-
-      if (taskGrid) {
-        taskGrid.before(title);
-      } else if (roadmap) {
-        roadmap.before(title);
-      }
-    }
-
-    roadmap?.remove();
-  });
+<header class="topbar">
+<a class="brand" href="#top">小美说</a>
+<nav aria-label="提案目录">
+<a href="#thesis">定位</a>
+<a href="#competition">新氧与美呗</a>
+<a href="#difference">差异化</a>
+<a href="#product">产品</a>
+<a href="#business">商业模式</a>
+<a href="#validation">验证</a>
+<a href="#resources">预算</a>
+<a href="#sources">来源</a>
+</nav>
+<span class="edition">DARWIN · SEPT 2026</span>
+</header>
+<main id="top">
+<section class="hero">
+<div class="wrap">
+<div class="hero-grid">
+<div>
+<div class="kicker">Project Darwin / Business proposal · vF 更新</div>
+<h1>先想清楚怎么变，<br>再决定怎么做。</h1>
+<p class="lead">从你喜欢的照片出发，说明想改善什么、想保留什么，比较项目选择，整理一份能带去面诊的沟通方案。</p>
+<div class="hero-bottom">
+<a class="link-button" href="#competition">查看竞品与定位更新</a>
+<span class="note">2026 年 9 月 8 日</span>
+</div>
+<p class="revision">本次更新：新氧魔镜与美呗看脸研究、图像实验结论、付费产品与验证计划。</p>
+</div>
+<figure class="hero-photo">
+<img src="assets/ideal-natural.jpg" alt="小美说原提案中的风格参考肖像">
+<figcaption>保留个人特点，是产品希望实现的价值；图片为原提案视觉素材，不是治疗结果。</figcaption>
+</figure>
+</div>
+<div class="rule">定位判断：有值得验证的机会，但尚未证明独特性。AI 看脸、个性化报告和模拟图，都不能单独构成竞争优势。</div>
+</div>
+</section>
+<section class="content" id="thesis">
+<div class="wrap">
+<div class="kicker">01 / 核心判断</div>
+<h2>用户为一次更清楚的决定付费。</h2>
+<p class="intro">优先服务未来 3–6 个月准备咨询或治疗、已经收藏了参考图、却难以比较方案的人。她或他真正需要的是：把“我喜欢这种感觉”变成可以讨论的选择，同时保留自己的特点。</p>
+<div class="grid">
+<article class="card">
+<span class="num">用户的问题</span>
+<h3>我有偏好，<br>但说不清楚。</h3>
+<p>参考图可能来自妆容、光线或不同面部基础。用户需要知道自己到底喜欢哪一处，以及哪些部分不想改变。</p>
+</article>
+<article class="card">
+<span class="num">产品的交付</span>
+<h3>选择有依据，<br>面诊有准备。</h3>
+<p>每个候选项目说明来源、目标、替代选择、成本与恢复期信息；用户能勾选、修改，带走需要和医生确认的问题。</p>
+</article>
+<article class="card">
+<span class="num">商业的前提</span>
+<h3>免费报告之后，<br>仍有新增价值。</h3>
+<p>必须证明用户用过新氧、美呗的可用服务后，仍愿意为小美说的决策帮助付费。更漂亮的页面不能替代这个证明。</p>
+</article>
+</div>
+<details>
+<summary>保留原提案的人群与需求假设</summary>
+<p class="note">原提案的示例用户为 29 岁、治疗预算 1–3 万；属于招募假设，不代表所有用户。原提案引用小红书灵犀口径：高意向人群 2,084 万、变美研究者约 1 亿、外观改善人群 1.5 亿以上。此轮未取得查询日期、定义及原始导出，暂不作为已验证市场规模或收入预测依据；三层人群重叠，不可相加。</p>
+<p class="note">原提案中的人工审美咨询账号说明存在咨询供给，但没有核验成交金额与转化率，不能据此认定用户愿为 AI 产品支付相同价格。收藏夹自动接入、小红书流量与技术支持均有待授权和资源确认。</p>
+</details>
+</div>
+</section>
+<section class="content" id="competition">
+<div class="wrap">
+<div class="kicker">02 / 竞品核实</div>
+<h2>“看脸、出报告、给建议”，<br>市场已经有了。</h2>
+<p class="intro">当前公开页面能确认功能入口和服务方向，不能证明报告质量。以下区分官方描述、历史记录和未核实项；本轮没有上传人脸或完成登录后的端到端实测。</p>
+<div class="matrix-wrap">
+<table aria-label="新氧、美呗与小美说对比">
+<thead>
+<tr>
+<th>比较项</th>
+<th>新氧魔镜 / 新氧平台</th>
+<th>美呗看脸 / 美呗平台</th>
+<th>小美说当前阶段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<strong>入口与交付</strong>
+</td>
+<td>新氧极速版公开列出“魔镜”AI 美学诊断、一键测脸。主平台提供医美项目、内容、医生与预约入口。<a class="source-ref" href="#s1">[1]</a>
+</td>
+<td>主 App 公开写明“限时免费看脸，输出看脸报告”，同时提供一对一咨询。公开文案不足以确认报告是否由纯 AI 自动完成。<a class="source-ref" href="#s2">[2]</a>
+</td>
+<td>Build 51 已有审美画像、本人方案与效果生成流程。新版 editorial 逐页界面为本地原型，尚未发布到 App。</td>
+</tr>
+<tr>
+<td>
+<strong>图像模拟</strong>
+</td>
+<td>2018 年已有“真实模拟整形”上线报道。证明模拟不是新概念；当前版本的项目覆盖、保真度、可控性未实测。<a class="source-ref" href="#s5">[5]</a>
+</td>
+<td>本轮公开来源未核实当前 AI 模拟入口、交付质量和收费。不能写成“没有模拟”。</td>
+<td>本次 8 次图像请求返回 6 张、2 次超时；未观察到稳定的审美贴合或“哇哦感”。新算法尚在实验阶段。</td>
+</tr>
+<tr>
+<td>
+<strong>偏好与建议</strong>
+</td>
+<td>公开有 AI 美学分析。跨参考图的个人偏好、明确不改变项及逐项目证据追溯，尚未核实。</td>
+<td>有看脸报告与咨询，是否支持多图偏好学习、逐项目溯源、跨次修订，尚未核实。</td>
+<td>本地已加入同一面部变量的引用校验；两组实验没有有效参考变量与推荐项目重合，尚未证明新增审美价值。</td>
+</tr>
+<tr>
+<td>
+<strong>收费与承接</strong>
+</td>
+<td>App 免费下载不等于所有 AI 功能免费。集团同时经营治疗服务、信息与预约服务等，已不是单纯导流平台。<a class="source-ref" href="#s3">[3]</a>
+</td>
+<td>看脸“限时免费”；官网承接咨询、医院医生推荐与预约。B 端合伙人页公开展示申请、审核与签约流程；消费者具体收费与分成比例未核实。<a class="source-ref" href="#s4">[4]</a>
+</td>
+<td>建议先测用户付费的按次决策包；医生匹配和交易佣金作为后续可选模式，不预设为必须走向的平台。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="callout">
+<p>
+<strong>对竞争的修正：</strong>新氧 2026 年二季度披露治疗服务收入 3.314 亿元、信息与预约服务收入 8,790 万元；期末 65 家品牌中心，其中 63 家自营。它拥有治疗供给和执行能力。小美说需要证明的是用户愿意单独付费的帮助，而不是抢先做出一份看脸报告。<a class="source-ref" href="#s3">[3]</a>
+</p>
+</div>
+<p class="note">“未核实”只代表本轮证据不足。平台商业模式能说明激励关系，不能据此推断它的每条建议有偏差。具体功能、费用和入口以用户所在地的实际版本为准。</p>
+</div>
+</section>
+<section class="content dark" id="difference">
+<div class="wrap">
+<div class="kicker">03 / Differentiation</div>
+<h2>最值得争取的，是让用户<br>掌握自己的选择依据。</h2>
+<p class="intro">“懂我的审美”有吸引力，但太容易被所有产品宣称。我们要把它变成用户看得见、能修改、能带走的交付。</p>
+<div class="grid">
+<article class="card">
+<span class="num">A / 有吸引力吗</span>
+<h3>像自己，<br>也更接近喜欢的样子。</h3>
+<p>参考图中喜欢的部位与不改变项要明确；图像需要保留身份和画幅，体现选中项目。方向有吸引力，本轮效果尚未证明能兑现。</p>
+<span class="tag">吸引力：有假设，待盲测</span>
+</article>
+<article class="card">
+<span class="num">B / 有实际意义吗</span>
+<h3>能解释选择，<br>能改善面诊沟通。</h3>
+<p>每个项目说明是源于自拍、本次目标还是参考偏好；比较选择和优先级，记录修改理由。用“是否解决具体分歧”衡量价值。</p>
+<span class="tag">实用性：最值得先验证</span>
+</article>
+<article class="card">
+<span class="num">C / 足够独特吗</span>
+<h3>组合有机会，<br>功能还不是壁垒。</h3>
+<p>偏好溯源、用户控制、跨次修订和可带走的面诊包，可能形成区别。当前没有证据支持“竞品都没有”或“我们已经领先”。</p>
+<span class="tag">独特性：尚未成立</span>
+</article>
+</div>
+<div class="callout">
+<p>
+<strong>建议对消费者说：</strong>“把你喜欢的样子和不想改变的地方说清楚，比较项目，带着问题去面诊。”<br>结果需要在具体任务中证明：例如两位医生给出不同方案后，用户是否能指出分歧、理解选择，并提出有用的问题。</p>
+</div>
+<p class="note">长期可能形成的资产是经用户授权的“偏好—选择—修订—反馈”记录与医生校准的评估集。大模型、提示词、图库数量和 editorial UI 可提升体验，但单独都容易复制。</p>
+</div>
+</section>
+<section class="content" id="product">
+<div class="wrap">
+<div class="kicker">04 / 产品与交付</div>
+<h2>每一步都回答一个具体问题。</h2>
+<div class="split">
+<div>
+<p class="intro">保留轻奢杂志气质，把功能说清楚。画面可以有情绪，按钮和结果必须明确。</p>
+<div class="callout">
+<p>
+<strong>建议首个付费交付：</strong>一次目标确认、一份可修改的项目比较、面诊问题清单，以及经质量验证后开放的有限次图像模拟。</p>
+</div>
+<p class="note">候选项目需有本人证据。有效方案至少包含一个有依据的项目；依据不足时要求补充照片或调整目标，不为了凑数生成治疗建议。面诊包中的具体诊疗操作、材料和用量由医生确认。</p>
+</div>
+<div class="steps">
+<div class="step">
+<div>
+<strong>选出喜欢的参考图</strong>
+<p>男女各 10 张，支持完整人像查看。让脸型、五官与气质有差异，避免只换妆发。</p>
+</div>
+</div>
+<div class="step">
+<div>
+<strong>确认想改变和想保留的地方</strong>
+<p>用户可以修正画像，明确本次目标与背景。用“选择本人照片”“补充个人情况”等直接标题。</p>
+</div>
+</div>
+<div class="step">
+<div>
+<strong>比较本人适合讨论的项目</strong>
+<p>显示选择依据、项目名称和替代路线。参考偏好没有影响项目时如实说明。</p>
+</div>
+</div>
+<div class="step">
+<div>
+<strong>查看变化，整理面诊问题</strong>
+<p>图像交付目标：与选中项目逐项对应，并保持同一身份、视角、光线与画幅。失败可继续阅读文字方案。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="grid" style="margin-top:36px">
+<article class="card">
+<span class="current">已有版本 / Build 51</span>
+<h3>主流程可运行</h3>
+<p>审美画像、本人方案、项目选择与效果生成已在当前版本范围内；完成流程不等于疗效和付费价值已获验证。</p>
+</article>
+<article class="card">
+<span class="current experimental">本地更新 / 未发布</span>
+<h3>界面与证据校验</h3>
+<p>50 页设计原型，4 种宽度共 200 次布局检查；男女各 10 张图库。算法已修正引用、项目名称映射和图像比例问题。</p>
+</article>
+<article class="card">
+<span class="current experimental">待验证 / 待建设</span>
+<h3>稳定图像与服务闭环</h3>
+<p>审美驱动的明显改善尚未成立。已有本机档案和面诊导出基础；跨次学习、付费交付、专家服务及医生匹配仍需产品化与验证。</p>
+</article>
+</div>
+<details>
+<summary>查看原提案演示（历史原型）</summary>
+<div class="demo">
+<video controls playsinline preload="none" poster="artifacts/xiaomeishuo-demo/core-ux-deliverables-storyboard.png">
+<source src="assets/xiaomeishuo-product-walkthrough.mp4" type="video/mp4">
+</video>
+<p class="note">保留原提案演示以便追溯。视频展示的是早期产品设想，不代表本次新版 UI、生成质量、收藏接入或医疗执行能力已经上线。</p>
+</div>
+</details>
+</div>
+</section>
+<section class="content" id="images">
+<div class="wrap">
+<div class="kicker">05 / 图像算法的商业含义</div>
+<h2>“哇哦”需要更贴近偏好，<br>也需要每次都能交付。</h2>
+<p class="intro">本轮并未证明新算法获胜。真实调用帮助我们看清了问题：参考偏好未落到同一可改变变量，部分输出更多改变了光线、肤质或构图。</p>
+<div class="metric-row">
+<div>
+<div class="score">8 / 6</div>
+<span>图像请求 / 成功返回</span>
+</div>
+<div>
+<div class="score">2</div>
+<span>请求超时；费用未知</span>
+</div>
+<div>
+<div class="score">68.6 s</div>
+<span>A 组 4 图生成及评分墙钟时间</span>
+</div>
+<div>
+<div class="score">133.5 s</div>
+<span>B 组 2 图返回及评分墙钟时间</span>
+</div>
+</div>
+<div class="grid">
+<article class="card">
+<span class="num">第一步 / 对齐审美目标</span>
+<h3>先知道要改哪一处</h3>
+<p>拆开“参考图的可见特点”“本人现状”和“项目能改变的内容”。只有同一变量有证据才融合；偏好与现状已一致时也要能识别。</p>
+</article>
+<article class="card">
+<span class="num">第二步 / 稳定图像变化</span>
+<h3>让变化来自选中项目</h3>
+<p>锁定身份、构图与光线，检查额部纹理、眼下或法令区等实际目标。不能用全脸提亮、重绘皮肤来代替项目变化。</p>
+</article>
+<article class="card">
+<span class="num">第三步 / 再比较模型路线</span>
+<h3>用同一组输入做盲测</h3>
+<p>先验证修正比例和项目映射后的当前路线；若仍不达标，再对照局部编辑和候选筛选。用合格交付率、用户偏好与成本共同决定。</p>
+</article>
+</div>
+<p class="note">实验边界：两组文字样本、其中一组自拍的旧 / 新提示词各 4 次图像请求；零有效同变量命中，因此是“选中项目可见性”实验，不是成功的审美匹配验证。真实请求发生在项目名称与比例修复之前，本地测试通过不等于修复后的真实效果已验证。</p>
+<p class="note">费用口径：6 次上游文字请求估算 $0.382482；图像阶段已知组件约 $2.306925，若思考 token 按文本输出价计则约 $2.341377。全轮按后一假设约 $2.723859，另有 2 次超时费用未知。来自保存的供应商报价与用量，不是完整账单、稳定单次成本或毛利依据。</p>
+</div>
+</section>
+<section class="content dark" id="business">
+<div class="wrap">
+<div class="kicker">06 / Business model</div>
+<h2>先验证按次付费，<br>让交付和收入对得上。</h2>
+<p class="intro">医美决策发生在具体时间点，现阶段缺少高频使用和年度续订的证据。先卖一份可带走的决策服务；图像次数、修订范围和专家时间分别计量。</p>
+<div class="grid">
+<article class="card">
+<span class="num">免费 / 让用户理解价值</span>
+<h3>偏好与目标整理</h3>
+<div class="price">¥0</div>
+<p>选择参考、填写目标，体验一段有依据的解释。记录获得一个合格付费用户前的全部免费使用成本，不能假设自然转化。</p>
+</article>
+<article class="card">
+<span class="num">首个付费产品 / 价格假设</span>
+<h3>一次面诊决策包</h3>
+<div class="price">¥99–199 <small>待测试</small>
+</div>
+<p>同一目标下的项目比较、一次文字修订与可带走的面诊问题。图像质量通过门槛后，拟加入 1 张主模拟与原图对照；内部候选不算多份交付，技术失败不重复收费。</p>
+</article>
+<article class="card">
+<span class="num">后续可选 / 单独核算</span>
+<h3>专家复核与再评估</h3>
+<div class="price">按服务计价</div>
+<p>用户主动选择专家复核，明示提供者、范围和费用。先确认专家报价与责任边界，不用软件包价格兜底无限人工服务。</p>
+</article>
+</div>
+<div class="callout">
+<p>
+<strong>收入模式影响信任承诺：</strong>首阶段建议由用户付费，不将候选项目排序与机构佣金挂钩。以后若增加转介，必须明示利益关系，保留用户自由选医生和带走方案的能力；“独立建议”不能只是一句广告。</p>
+</div>
+<p class="note">年度订阅需等到跨次复购、恢复记录或持续咨询需求成立后再试。机构工具是另一种客户与服务模式，需要独立验证，不把 B2C 付费成立自动推导成交易平台或 B2B 网络效应。</p>
+</div>
+</section>
+<section class="content" id="economics">
+<div class="wrap">
+<div class="kicker">07 / 单位经济</div>
+<h2>真正要算的是，<br>完成一单还剩多少钱。</h2>
+<p class="intro">图像超时、重试、退款、人工支持和免费用户都会消耗成本。下面只做决策包的情景测算，所有输入都是可调整的管理假设，不是经营实绩。</p>
+<div class="calculator">
+<div class="inputs">
+<label>每单价格（元）<input id="price" type="number" min="0" max="10000" value="149">
+</label>
+<label>退款比例（%）<input id="refund" type="number" min="0" max="100" value="10">
+</label>
+<label>支付 / 渠道费率（%）<input id="fee" type="number" min="0" max="100" value="15">
+</label>
+<label>模型与交付成本 / 下单（元）<input id="delivery" type="number" min="0" max="10000" value="20">
+</label>
+<label>人工支持 / 下单（元）<input id="support" type="number" min="0" max="10000" value="10">
+</label>
+<label>获客与免费体验摊销 / 下单（元）<input id="acquisition" type="number" min="0" max="10000" value="35">
+</label>
+</div>
+<div class="outputs" aria-live="polite">
+<div>
+<output id="net">¥113.99</output>
+<span>每单净收入</span>
+</div>
+<div>
+<output id="contribution">¥48.99</output>
+<span>获客后每单贡献</span>
+</div>
+<div>
+<output id="contribution-margin">36.5%</output>
+<span>占退款后收入比例</span>
+</div>
+</div>
+<p class="note">净收入＝价格 ×（1 − 退款率）×（1 − 费率）；每单贡献＝净收入 − 模型交付 − 人工支持 − 获客及免费体验摊销。金额逐步四舍五入至分。费用假设按退款后收入计；实际支付条款可能不同。未含税、固定工资及专家复核；专家应作为单独产品核算。此处“贡献”不等于公司净利润。</p>
+</div>
+<div class="callout">
+<p>
+<strong>规模目标与收入必须分开：</strong>保留原提案 12 个月 600 位付费用户的探索目标。若每人仅买一单 ¥149，含退款前销售额也只有 ¥89,400。与 200 万预算相比，第一年应被定义为验证投入，而非已经闭合的盈利模型。</p>
+</div>
+</div>
+</section>
+<section class="content" id="validation">
+<div class="wrap">
+<div class="kicker">08 / 六周验证</div>
+<h2>对照免费竞品，<br>验证用户会不会选择我们。</h2>
+<p class="intro">保留原提案六周、2 万元的冷启预算，作为全年预算内的首笔验证投入。先做 20 次深访，再招募 30–50 名有近期决策任务的用户；8–10 位专家盲审 20–30 份方案。</p>
+<div class="matrix-wrap">
+<table aria-label="六周实验与决策门槛">
+<thead>
+<tr>
+<th>实验</th>
+<th>怎么做</th>
+<th>建议继续门槛</th>
+<th>没达到时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<strong>比免费服务多了什么</strong>W1–2 定义；W3–4 测试</td>
+<td>同一用户完成同一任务，随机先后体验小美说与当地可用的新氧 / 美呗入口；另外比较相同输入但没有偏好融合的小美说基线。记录实际版本、免费范围与人工参与。</td>
+<td>至少 20 个完整配对；≥60% 用户选择小美说，并能指出具体新增帮助。记录平局、原始人数与区间，不只报满意度。</td>
+<td>若只因界面漂亮或报告更长获选，继续修产品价值，不扩大投放。</td>
+</tr>
+<tr>
+<td>
+<strong>图像是否值得付费</strong>W3–4 质量实验</td>
+<td>至少 20 个获授权的标准案例，冻结输入与目标；盲评身份、指定部位变化、参考偏好和整体自然度。分开统计接口成功与合格交付。</td>
+<td>≥90% 会话在 180 秒内得到合格图（拟议时限）；新方案偏好胜率≥60%，且身份与非目标变化不能退步。门槛通过后才测试图像收费。</td>
+<td>未达门槛就不将图像作为付费主承诺；继续验证文字决策包是否独立有价值。</td>
+</tr>
+<tr>
+<td>
+<strong>有用是否等于愿付钱</strong>W5</td>
+<td>在看过免费竞品与完整交付样例后，小规模测试 ¥99 / ¥149 / ¥199；说明范围后真实付费。7 天跟进是否实际用于咨询与后续退款。</td>
+<td>5–10 单真实付款，单列各价格人数；≥60% 付费者实际带去咨询或解决一项明确分歧。小样本不用于认定最优价格。</td>
+<td>记录未付费原因。仅低价成立时，重新核算人工与获客成本，不用注册量替代收入。</td>
+</tr>
+<tr>
+<td>
+<strong>医生与交付审核</strong>W5–6</td>
+<td>专家盲审候选依据、项目语义、边界与沟通价值；追踪所有失败、重试、支持时间和退款原因。</td>
+<td>本批样本零严重误导；按定义记录可接受率。获客后单笔贡献为正；所有严重问题解决前不扩大开放。</td>
+<td>返回相应规则或服务环节修正。一次小样本零问题不等于已证明医疗安全。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="note">这些阈值是拟议管理门槛，不是已取得结果，也不是统计显著性的替代。研究补贴和真实支付分开记账，不能用返还全部价格的“付款”证明需求。不得为了对照而替用户上传人脸；受试者自行知情选择是否使用竞品。</p>
+</div>
+</section>
+<section class="content" id="resources">
+<div class="wrap">
+<div class="kicker">09 / 资源与阶段决策</div>
+<h2>保留 200 万预算，<br>按证据分阶段投入。</h2>
+<p class="intro">全年 12 个月，保留原提案总额与大类。已有 Build 51，不再把“从零做出 App”设为核心里程碑；后续投入围绕交付质量、真实付费和可持续获客。</p>
+<div class="budget" role="img" aria-label="预算：核心人力65%，增长15%，AI技术6%，研究及预备14%">
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+</div>
+<div class="cost-list">
+<div>
+<strong>130 万</strong>
+<span>核心人力，含提报人</span>
+</div>
+<div>
+<strong>30 万</strong>
+<span>小红书等渠道获客测试</span>
+</div>
+<div>
+<strong>12 万</strong>
+<span>模型、技术与交付</span>
+</div>
+<div>
+<strong>28 万</strong>
+<span>研究、医学顾问、法务与预备</span>
+</div>
+</div>
+<div class="grid" style="margin-top:38px">
+<article class="card">
+<span class="num">M1–2 / 证明增量价值</span>
+<h3>先过竞品对照</h3>
+<p>完成六周研究、图像与项目语义评估。明确哪些交付值得付费，以及哪些只能作为探索展示。</p>
+</article>
+<article class="card">
+<span class="num">M3–6 / 验证付费交付</span>
+<h3>把服务做稳定</h3>
+<p>目标 300–500 名试用用户、30–50 个付费订单、100 份专家抽审。打通明确范围的支付、修订与退款。</p>
+</article>
+<article class="card">
+<span class="num">M7–12 / 再决定扩张</span>
+<h3>按贡献与复购放量</h3>
+<p>2 万注册、600 位付费用户保留为探索目标。先看渠道贡献与跨次需求，再决定订阅、专家服务或匹配试验。</p>
+</article>
+</div>
+<div class="callout">
+<p>
+<strong>投入停止条件：</strong>如果用过免费竞品后仍缺少真实付款，或合格交付的成本长期高于收入，就缩小服务范围或停止扩张。机构愿意接单、用户愿意看报告、用户愿意付费，是三个不同问题。</p>
+</div>
+</div>
+</section>
+<section class="content" id="sources">
+<div class="wrap">
+<div class="kicker">10 / 来源与证据边界</div>
+<h2>哪些已经确认，<br>哪些还需要验证。</h2>
+<p class="intro">竞品核查日为 2026 年 9 月 8 日。官方产品文案是功能声明；财报是公司披露；效果质量、用户价值和转化需要独立实测。</p>
+<div class="sources">
+<div class="source" id="s1">
+<strong>[1] 新氧极速版 · App Store 官方上架页</strong>
+<a href="https://apps.apple.com/cn/app/id1229054315" target="_blank" rel="noopener">查看产品页 ↗</a>
+<p>页面列出新氧魔镜、AI 美学诊断与一键测脸；研究时版本 9.99.3，更新于 2026-08-31；2025-11-25 的版本记录宣称 8 款全脸分析，具体名称未展开。用于确认公开功能声明，不验证质量、收费或每个版本的可用性。另参见<a href="https://apps.apple.com/cn/app/id1322331084" target="_blank" rel="noopener">新氧医美主 App</a>的项目、医生与预约介绍。</p>
+</div>
+<div class="source" id="s2">
+<strong>[2] 美呗医美 · App Store 官方上架页</strong>
+<a href="https://apps.apple.com/cn/app/id1453964812" target="_blank" rel="noopener">查看产品页 ↗</a>
+<p>研究时版本 11.7.8，更新于 2026-06-22。公开“限时免费看脸，输出看脸报告”及一对一咨询；未确认纯 AI 自动报告、模拟质量或完整付费流程。</p>
+</div>
+<div class="source" id="s3">
+<strong>[3] 新氧 2026 年第二季度业绩公告</strong>
+<a href="https://www.prnewswire.com/news-releases/so-young-reports-unaudited-second-quarter-2026-financial-results-302864843.html" target="_blank" rel="noopener">公司发布稿 · 2026-08-31 ↗</a>
+<p>未审计季度披露：治疗服务 3.314 亿元；信息与预约服务 8,790 万元；65 家品牌中心，其中 63 家自营。是集团口径，不是魔镜收入或单项 AI 盈利。</p>
+</div>
+<div class="source" id="s4">
+<strong>[4] 美呗官网与合伙人平台</strong>
+<a href="https://www.meb.com/" target="_blank" rel="noopener">美呗官网 ↗</a> · <a href="https://hhr.meb.com/#/" target="_blank" rel="noopener">合伙人平台 ↗</a>
+<p>官网展示咨询、医生医院推荐与预约；合伙人页展示申请、审核、洽谈与签约合作流程。未核实佣金比例、消费者每项费用或看脸内部实现。</p>
+</div>
+<div class="source" id="s5">
+<strong>[5] 新氧模拟功能 · 历史报道</strong>
+<a href="https://www.sohu.com/a/231007413_114778" target="_blank" rel="noopener">《新氧 App 上线 7.3.1，首创真实模拟整形》↗</a>
+<p>2018-05-09 历史报道，只说明模拟功能早有实践，不能替代 2026 年版本实测。</p>
+</div>
+<div class="source" id="s6">
+<strong>[6] 小美说 · 本地代码与实验记录</strong>
+<p>Build 51 与本地 editorial v4、2026-09-08 审美来源校验及图像 A/B 记录。后端最终 580 项检查通过，iOS 类型检查通过；此前 DTO 更新后的 101 项 XCTest 通过。测试验证实现，不证明审美、疗效或商业结果。</p>
+<p>商业价格、目标、成本情景及实验门槛均为本提案假设。未公开人脸实验原图、后台请求或密钥。</p>
+</div>
+</div>
+<p class="note">
+<a href="research-2026-09-08.md">阅读完整竞品研究与证据清单 ↗</a> · <a href="https://github.com/jrchuckie/xiaomeishuo/blob/4442d41/public/one-page-memo-vf/index.html" target="_blank" rel="noopener">原 vF 提案存档 ↗</a>
+</p>
+</div>
+</section>
+</main>
+<footer class="footer wrap">
+<span>小美说 · Project Darwin · 商业提案</span>
+<span>更新于 2026.09.08 · 事实、产品状态与假设分开呈现</span>
+</footer>
+<script>
+function updateEconomics(){const n=(id)=>Math.max(0,Number(document.getElementById(id).value)||0);const price=n('price'),refund=Math.min(100,n('refund'))/100,fee=Math.min(100,n('fee'))/100;const money=(v)=>Math.sign(v)*Math.round((Math.abs(v)+1e-9)*100)/100;const collected=money(price*(1-refund)),net=money(collected*(1-fee)),contribution=money(net-n('delivery')-n('support')-n('acquisition'));document.getElementById('net').textContent='¥'+net.toFixed(2);document.getElementById('contribution').textContent='¥'+contribution.toFixed(2);document.getElementById('contribution-margin').textContent=collected>0?(contribution/collected*100).toFixed(1)+'%':'—';}document.querySelectorAll('.inputs input').forEach(e=>e.addEventListener('input',updateEconomics));updateEconomics();
+// Keep the final two Chinese characters together in plain prose; avoid changing inputs, links or controls.
+const walker=document.createTreeWalker(document.querySelector('main'),NodeFilter.SHOW_TEXT);const nodes=[];while(walker.nextNode()){const node=walker.currentNode;if(!node.parentElement.closest('script,style,button,input,output,a,summary,.no-orphan'))nodes.push(node);}nodes.forEach(node=>{const match=node.textContent.match(/([\p{Script=Han}]{2}[。！？；：，、”’）】]*)(\s*)$/u);if(!match)return;const span=document.createElement('span');span.className='no-orphan';span.textContent=match[1];const fragment=document.createDocumentFragment();fragment.append(document.createTextNode(node.textContent.slice(0,match.index)),span,document.createTextNode(match[2]));node.replaceWith(fragment);});
 </script>
-  <style id="vf-final-review">
-    .executive-demo video {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      background: #111;
-    }
-
-    .future-six-week-title {
-      margin: 42px 0 18px;
-      font-size: 30px;
-      line-height: 1.2;
-      font-weight: 800;
-      letter-spacing: 0;
-    }
-  </style>
-  <script id="vf-final-review-script">
-    (() => {
-      const replaceLeaf = (from, to) => {
-        document.querySelectorAll("body *").forEach((element) => {
-          if (!element.children.length && element.textContent.includes(from)) {
-            element.textContent = element.textContent.replace(from, to);
-          }
-        });
-      };
-
-      replaceLeaf("先为判断收费，", "先为美学设计方案付费");
-      replaceLeaf(
-        "懂不懂我、有没有用、愿不愿付费、是否安全",
-        "愿不愿意用、好不好用、愿不愿意付费、是否安全"
-      );
-
-      document.querySelectorAll(".product-video").forEach((element) => element.remove());
-      document.querySelectorAll(".six-week-roadmap").forEach((element) => element.remove());
-
-      const executiveDemo = document.querySelector(".executive-demo");
-      if (executiveDemo && !executiveDemo.querySelector("video")) {
-        const image = executiveDemo.querySelector("img");
-        const video = document.createElement("video");
-        video.controls = true;
-        video.playsInline = true;
-        video.muted = true;
-        video.autoplay = true;
-        video.loop = true;
-        video.preload = "metadata";
-        video.src = "./assets/xiaomeishuo-product-demo-v1.mp4?v=11-images-20260717";
-
-        if (image) {
-          video.poster = image.currentSrc || image.src;
-          image.replaceWith(video);
-        } else {
-          executiveDemo.prepend(video);
-        }
-      }
-
-      const execution = document.querySelector("#execution .section-inner");
-      if (execution && !execution.querySelector(".future-six-week-title")) {
-        const deepInterview = [...execution.querySelectorAll("*")].find(
-          (element) => !element.children.length && element.textContent.includes("20 次深访")
-        );
-        let taskGroup = deepInterview;
-
-        while (taskGroup && taskGroup.parentElement !== execution) {
-          if (
-            taskGroup.textContent.includes("20 次深访") &&
-            taskGroup.textContent.includes("30–50 人测试") &&
-            taskGroup.textContent.includes("8–10 位专家")
-          ) {
-            break;
-          }
-          taskGroup = taskGroup.parentElement;
-        }
-
-        if (taskGroup) {
-          const heading = document.createElement("h3");
-          heading.className = "future-six-week-title";
-          heading.textContent = "未来 6 周 To-do";
-          execution.insertBefore(heading, taskGroup);
-        }
-      }
-    })();
-  </script>
 </body>
 </html>
